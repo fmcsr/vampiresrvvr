@@ -85,5 +85,5 @@ func _blast(center: Vector3, radius: float, damage: float, knockback: float) -> 
 	for enemy in hit:
 		var push := enemy.global_position - center
 		push.y = 0.0
-		enemy.take_damage(damage, push.normalized() * knockback)
+		enemy.take_damage(damage, push.normalized() * knockback, true, color)
 	return hit

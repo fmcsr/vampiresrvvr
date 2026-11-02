@@ -2,7 +2,7 @@ extends Control
 ## Camp (base) screen between runs: equipment, skills, shop and core tree. Runs start from here.
 
 const RUN_SCENE := "res://scenes/main.tscn"
-const TAB_NAMES: Array[String] = ["Equipment", "Skills", "Shop", "Core Tree"]
+const TAB_NAMES: Array[String] = ["Equipment", "Skills", "Shop", "Core Tree", "Settings"]
 const ACCENT := Color(0.85, 0.7, 1.0)
 const GOLD_COLOR := Color(1.0, 0.8, 0.3)
 const CORE_COLOR := Color(0.45, 1.0, 0.7)
@@ -18,6 +18,10 @@ var _current_tab := 0
 
 
 func _ready() -> void:
+	# Nothing from the run (slow motion, gate hum, heartbeat) carries over into the camp.
+	Engine.time_scale = 1.0
+	Audio.stop_loops()
+	Audio.play_music("camp")
 	_build()
 	# Deferred so the UI isn't rebuilt from inside a button's own signal.
 	Profile.changed.connect(_refresh, CONNECT_DEFERRED)
@@ -54,6 +58,7 @@ func _refresh() -> void:
 
 
 func _start_run() -> void:
+	Audio.play("blade")
 	get_tree().change_scene_to_file(RUN_SCENE)
 
 
@@ -109,7 +114,7 @@ func _build() -> void:
 	content_style.set_content_margin_all(18)
 	content.add_theme_stylebox_override("panel", content_style)
 	column.add_child(content)
-	for panel: HubPanel in [EquipmentPanel.new(), SkillsPanel.new(), ShopPanel.new(), CoreTreePanel.new()]:
+	for panel: HubPanel in [EquipmentPanel.new(), SkillsPanel.new(), ShopPanel.new(), CoreTreePanel.new(), SettingsTab.new()]:
 		content.add_child(panel)
 		_panels.append(panel)
 

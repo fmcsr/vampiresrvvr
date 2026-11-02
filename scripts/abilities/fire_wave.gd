@@ -31,7 +31,11 @@ func activate() -> void:
 	for enemy in Game.enemies_in_cone(origin, direction, final_reach, half_angle):
 		var push := enemy.global_position - origin
 		push.y = 0.0
-		enemy.take_damage(damage * scale, push.normalized() * knockback)
+		enemy.take_damage(damage * scale, push.normalized() * knockback, true, color)
 		if choice == "a" and enemy.is_alive:
 			enemy.apply_burn(burn_dps * scale, burn_duration)
 	Fx.sector(origin, direction, final_reach, half_angle, color)
+	for i in 3:
+		var spread := direction.rotated(Vector3.UP, randf_range(-half_angle, half_angle) * 0.7)
+		Fx.burst(&"embers", origin + spread * final_reach * (0.35 + 0.3 * i) + Vector3.UP * 0.4, color, 0.7)
+	Audio.play("fire_wave")

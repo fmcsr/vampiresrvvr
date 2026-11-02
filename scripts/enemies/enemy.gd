@@ -12,7 +12,10 @@ const BASE_HEIGHT := 1.7
 const CONTACT_MARGIN := 0.25
 const KNOCKBACK_DECAY := 30.0
 const FLASH_TIME := 0.08
+## The model squashes for a moment when hit.
+const SQUASH_TIME := 0.12
 const BURN_TICK := 0.5
+const BURN_COLOR := Color(1.0, 0.55, 0.2)
 
 var type: EnemyType
 var is_alive := false
@@ -27,6 +30,7 @@ var _burn_time := 0.0
 var _burn_dps := 0.0
 var _burn_tick := 0.0
 var _flash_time := 0.0
+var _squash_time := 0.0
 
 static var _flash_material: StandardMaterial3D
 static var _frozen_material: StandardMaterial3D
@@ -63,6 +67,7 @@ func spawn(enemy_type: EnemyType, at: Vector3, health_multiplier: float) -> void
 	_burn_time = 0.0
 	_burn_dps = 0.0
 	_flash_time = 0.0
+	_squash_time = 0.0
 	_refresh_material()
 	global_position = at
 	velocity = Vector3.ZERO
@@ -112,19 +117,23 @@ func _chase(player: Player, delta: float) -> void:
 		player.take_damage(type.contact_damage)
 		# Bone Shield (Enhanced): enemies that hit a shielded player take damage.
 		if player.thorns_damage > 0.0:
-			take_damage(player.thorns_damage)
+			take_damage(player.thorns_damage, Vector3.ZERO, true, SkillLibrary.color("bone_shield"))
 
 
-func take_damage(amount: float, knockback := Vector3.ZERO, flash := true) -> void:
+## color tints the damage number (the source's color; white for the Sword Swing).
+func take_damage(amount: float, knockback := Vector3.ZERO, flash := true, color := Color.WHITE) -> void:
 	if not is_alive:
 		return
 	if _freeze_time > 0.0:
 		amount *= 1.0 + Game.player.frozen_damage_bonus
 	health -= amount
+	if Game.damage_numbers:
+		Game.damage_numbers.add(self, amount, color)
 	if knockback != Vector3.ZERO:
 		_knockback += knockback * (1.0 - type.knockback_resistance)
 	if flash:
 		_flash_time = FLASH_TIME
+		_squash_time = SQUASH_TIME
 		_refresh_material()
 	if health <= 0.0:
 		_die()
@@ -146,6 +155,10 @@ func _update_status(delta: float) -> void:
 		_flash_time -= delta
 		if _flash_time <= 0.0:
 			_refresh_material()
+	if _squash_time > 0.0:
+		_squash_time = maxf(_squash_time - delta, 0.0)
+		var squash := _squash_time / SQUASH_TIME
+		_model.scale = Vector3(1.0 + 0.22 * squash, 1.0 - 0.18 * squash, 1.0 + 0.22 * squash) * type.size
 	if _freeze_time > 0.0:
 		_freeze_time -= delta
 		if _freeze_time <= 0.0:
@@ -155,7 +168,7 @@ func _update_status(delta: float) -> void:
 		_burn_tick -= delta
 		if _burn_tick <= 0.0:
 			_burn_tick = BURN_TICK
-			take_damage(_burn_dps * BURN_TICK, Vector3.ZERO, false)
+			take_damage(_burn_dps * BURN_TICK, Vector3.ZERO, false, BURN_COLOR)
 		if _burn_time <= 0.0:
 			_burn_dps = 0.0
 			_refresh_material()
@@ -177,9 +190,19 @@ func _die() -> void:
 	is_alive = false
 	Game.enemies.erase(self)
 	Game.kills += 1
+	_play_death()
 	died.emit(self)
 	# The body can't be removed during a physics query; return to the pool at the end of the frame.
 	_return_to_pool.call_deferred()
+
+
+## Death sound and particles from the type; big enemies also kick up dust.
+func _play_death() -> void:
+	var center := global_position + Vector3.UP * (0.8 * type.size)
+	Fx.burst(type.death_burst, center, type.death_color, clampf(0.6 * type.size, 0.4, 1.0))
+	if type.size >= 1.4:
+		Fx.burst(&"dust", global_position, Color(0.45, 0.4, 0.35, 0.6))
+	Audio.play_at(type.death_sound, global_position)
 
 
 func _return_to_pool() -> void:

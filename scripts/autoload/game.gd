@@ -13,10 +13,15 @@ var world: Node3D
 var pickups: PickupManager
 var spawner: EnemySpawner
 var director: RunDirector
+var particles: ParticleBursts
+var damage_numbers: DamageNumbers
 ## Enemies currently alive in the scene.
 var enemies: Array[Enemy] = []
 var run_time := 0.0
 var kills := 0
+
+## Unscaled seconds left in the current hit-stop.
+var _slow_left := 0.0
 
 
 func reset() -> void:
@@ -25,9 +30,22 @@ func reset() -> void:
 	pickups = null
 	spawner = null
 	director = null
+	particles = null
+	damage_numbers = null
 	enemies.clear()
 	run_time = 0.0
 	kills = 0
+	_slow_left = 0.0
+	Engine.time_scale = 1.0
+
+
+func _process(delta: float) -> void:
+	if _slow_left <= 0.0:
+		return
+	# delta is scaled by Engine.time_scale; dividing it back out counts unscaled seconds.
+	_slow_left -= delta / maxf(Engine.time_scale, 0.001)
+	if _slow_left <= 0.0:
+		Engine.time_scale = 1.0
 
 
 func announce(text: String) -> void:
@@ -36,6 +54,16 @@ func announce(text: String) -> void:
 
 func shake(strength: float) -> void:
 	camera_shake_requested.emit(strength)
+
+
+## Hit-stop: slows time for a moment so a big hit lands harder (a boss dying slows longer and
+## gentler). A call shorter than what is left of the current one is ignored. The countdown
+## pauses with the game.
+func hit_stop(duration: float, time_scale := 0.05) -> void:
+	if duration <= _slow_left:
+		return
+	_slow_left = duration
+	Engine.time_scale = time_scale
 
 
 func nearest_enemy(origin: Vector3, max_distance: float) -> Enemy:

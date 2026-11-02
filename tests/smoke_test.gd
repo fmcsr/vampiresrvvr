@@ -6,7 +6,8 @@ extends Node
 ## From the project folder (G = Godot.app/Contents/MacOS/Godot):
 ##   G --headless --path . --fixed-fps 60 res://tests/smoke_test.tscn -- --no-save --scenario=<name>
 ## Scenarios:
-##   systems     plays 4 minutes, uses every power, picks the first boon on each level-up (default)
+##   systems     plays 4 minutes, uses every power, picks the first boon on each level-up (default);
+##               also checks sounds, music, damage numbers and particles
 ##   death       stands still and dies → equipped gear is lost, then returns to camp
 ##   early_exit  kills the first boss and escapes through the early gate → gold, 1 core, item, XP
 ##   final_exit  kills every boss and escapes through the final gate → gold, 5 cores, items
@@ -22,6 +23,8 @@ const BOSS_VIEW_SECONDS := 26.0
 const POWERS_SECONDS := 30.0
 const TIMEOUT_SECONDS := 1200.0
 const STARTING_EQUIPMENT := 3
+## The systems scenario opens the pause screen once at this time, for a screenshot of it.
+const PAUSE_SHOT_TIME := 30.0
 ## XP that should reach the character level on an escape (the first level needs 400).
 const TEST_RUN_XP := 450
 ## Loadouts for the powers scenario: {skill: option}; every power at rank 3 and enhanced.
@@ -48,6 +51,7 @@ var _elapsed := 0.0
 var _frames := 0
 var _next_report := 0.0
 var _peak_enemies := 0
+var _peak_numbers := 0
 var _level_up_frames := 0
 var _finished := false
 var _failures: Array[String] = []
@@ -57,6 +61,9 @@ var _screenshot_times: Array[float] = []
 var _took_level_up_shot := false
 var _took_channel_shot := false
 var _portal_seen_at := -1.0
+var _pause_shot_frames := -1
+var _took_pause_shot := false
+var _took_low_health_shot := false
 
 
 func _ready() -> void:
@@ -136,6 +143,9 @@ func _physics_process(delta: float) -> void:
 			_level_up._lock_time = 0.0
 			_level_up._choose(0)
 		return
+	if _pause_shot_frames >= 0:
+		_drive_pause_shot()
+		return
 	_elapsed += delta
 	match _scenario:
 		"systems", "powers":
@@ -145,19 +155,61 @@ func _physics_process(delta: float) -> void:
 		"timeout":
 			_kill_bosses()
 	_peak_enemies = maxi(_peak_enemies, Game.enemies.size())
+	_peak_numbers = maxi(_peak_numbers, Game.damage_numbers.active_count())
 	if _elapsed >= _next_report:
 		_next_report += 15.0
 		print("[%s] enemies %d · kills %d · level %d · gold %d · physics %.2f ms" % [
 				UiKit.format_time(Game.run_time), Game.enemies.size(), Game.kills, _player.level,
 				Game.director.gold, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0])
+	if _scenario == "systems" and not _took_pause_shot and _elapsed >= PAUSE_SHOT_TIME:
+		_main._on_pause_toggle_requested()
+		_pause_shot_frames = 0
+	if _scenario == "death" and not _took_low_health_shot and _player.health < 0.25 * _player.max_health:
+		_took_low_health_shot = true
+		_screenshot("low_health")
 	if not _screenshot_times.is_empty() and _elapsed >= _screenshot_times[0]:
 		_screenshot("t%05.1f" % _screenshot_times.pop_front())
 	if _elapsed >= _time_limit():
 		if _scenario in ["systems", "boss_view", "powers"]:
+			if _scenario != "boss_view":
+				_check_feedback()
 			_finish("Time limit reached")
 		else:
 			_failures.append("The run did not end within %d s" % int(_time_limit()))
 			_finish("Timed out")
+
+
+## Sound and feel: every sound file loaded, the run music plays, damage numbers showed up and
+## the setting clears them, and the particle pools exist.
+func _check_feedback() -> void:
+	var missing: Array[String] = []
+	for id: String in Audio.SOUNDS:
+		if Audio.variation_count(id) != int(Audio.SOUNDS[id].get("count", 1)):
+			missing.append(id)
+	_expect(missing.is_empty(), "every sound file loaded (missing: %s)" % ", ".join(missing))
+	for track: String in Audio.MUSIC:
+		_expect(ResourceLoader.exists(Audio.MUSIC[track]["path"]), "music file for the %s track" % track)
+	_expect(Audio.music_track() == "run", "the run music is playing")
+	_expect(_peak_numbers > 0, "damage numbers appeared")
+	_expect(Game.particles.get_child_count() > 0, "particle pools were built")
+	Settings.set_value("damage_numbers", false)
+	_expect(Game.damage_numbers.active_count() == 0, "turning damage numbers off clears them")
+	Settings.set_value("damage_numbers", true)
+	print("Feedback: up to %d damage numbers at once, %d particle emitters" % [_peak_numbers, Game.particles.get_child_count()])
+
+
+## Pause screen: checks it pauses the game, takes a screenshot, then resumes.
+func _drive_pause_shot() -> void:
+	_pause_shot_frames += 1
+	if _pause_shot_frames == 1:
+		_expect(get_tree().paused and _main.pause_screen.visible, "the pause screen opens and pauses the game")
+	elif _pause_shot_frames == 3:
+		_screenshot("pause")
+	elif _pause_shot_frames >= 4:
+		_pause_shot_frames = -1
+		_took_pause_shot = true
+		if _main.pause_screen.visible:
+			_main._on_pause_toggle_requested()
 
 
 func _time_limit() -> float:
@@ -218,6 +270,8 @@ func _on_run_over() -> void:
 	print("Profile: gold %d · cores %d · stash %d · equipped %d" % [
 			Profile.gold, Profile.cores, Profile.stash.size(), Profile.equipped.size()])
 	_screenshot("result")
+	_expect(Audio.music_track() == "", "the music fades out when the run ends")
+	_expect(is_equal_approx(Engine.time_scale, 1.0), "no slow motion left after the run")
 	var start_gold := Profile.STARTING_GOLD
 	match _scenario:
 		"death":
@@ -253,7 +307,8 @@ func _on_run_over() -> void:
 ## quits a second later.
 func _finish_and_return_to_hub() -> void:
 	_finish("Death, then return to camp", false)
-	get_tree().create_timer(1.0).timeout.connect(get_tree().quit.bind(0 if _failures.is_empty() else 1))
+	# The test node is freed with the scene, so the autoload does the quitting.
+	get_tree().create_timer(1.0).timeout.connect(Audio.quit_quietly.bind(0 if _failures.is_empty() else 1))
 	_game_over._lock_time = 0.0
 	_game_over._request_continue()
 
@@ -383,6 +438,9 @@ func _drive_hub() -> void:
 			_expect(Profile.unlocked.has("a2") and Profile.cores == 4, "unlocking a node from the tree screen")
 		27:
 			_screenshot("tree_after")
+			_hub.show_tab(4)
+		30:
+			_screenshot("settings")
 			_finish("Camp")
 
 
@@ -421,4 +479,5 @@ func _finish(message: String, quit := true) -> void:
 	for action in Player.ABILITY_ACTIONS:
 		Input.action_release(action)
 	if quit:
-		get_tree().quit(0 if passed else 1)
+		Audio.quit_quietly(0 if passed else 1)
+

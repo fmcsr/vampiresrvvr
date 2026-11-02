@@ -62,6 +62,7 @@ func _physics_process(delta: float) -> void:
 		# If time was fast-forwarded, missed waves don't pile up; only one wave arrives.
 		_next_wave_time = (floorf(Game.run_time / wave_interval) + 1.0) * wave_interval
 		Game.announce("Surrounded!")
+		Audio.play("howl")
 		spawn_ring(player.global_position, wave_base_count + int(wave_count_per_minute * minutes), wave_radius)
 	_relocate_timer -= delta
 	if _relocate_timer <= 0.0:

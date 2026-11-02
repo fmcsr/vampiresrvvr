@@ -31,6 +31,7 @@ func activate() -> void:
 	player.set_spinning(true)
 	if choice != "a":
 		player.set_modifier(Player.Modifier.MOVE_SPEED, SLOW_SOURCE, slow_multiplier)
+	Audio.play("blade", 0.8)
 
 
 func _tick(delta: float) -> void:
@@ -45,6 +46,9 @@ func _tick(delta: float) -> void:
 		if choice == "b" and not hit.is_empty():
 			player.heal(heal_per_hit * hit.size())
 		Fx.spin(player.global_position, final_radius, color)
+		for i in mini(hit.size(), 2):
+			Fx.burst(&"sparks", hit[i].global_position + Vector3.UP * 0.9, color, 0.4)
+		Audio.play("swing", 1.25, -3.0)
 	if _spin_left <= 0.0:
 		player.set_spinning(false)
 		player.clear_modifier(Player.Modifier.MOVE_SPEED, SLOW_SOURCE)

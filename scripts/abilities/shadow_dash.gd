@@ -4,6 +4,7 @@ extends Ability
 ## Enhanced: cooldown −1 s. Shadow Trail: damage +30% for 2 s afterwards. Shadow Burst: area damage at the end.
 
 const TRAIL_SOURCE := "shadow_trail"
+const SMOKE_COLOR := Color(0.2, 0.15, 0.3, 0.6)
 
 @export var distance := 7.0
 @export var duration := 0.18
@@ -37,6 +38,8 @@ func activate() -> void:
 	_active = true
 	_last_position = player.global_position
 	_hit.clear()
+	Fx.burst(&"dust", player.global_position, SMOKE_COLOR, 0.6)
+	Audio.play("swing", 0.6, 8.0)
 
 
 func _tick(delta: float) -> void:
@@ -53,7 +56,7 @@ func _tick(delta: float) -> void:
 			_hit[enemy] = true
 			var push := enemy.global_position - current
 			push.y = 0.0
-			enemy.take_damage(hit_damage, push.normalized() * 4.0)
+			enemy.take_damage(hit_damage, push.normalized() * 4.0, true, color)
 	Fx.ghost(current, player.facing_yaw(), color)
 	_last_position = current
 	if not player.is_dashing():
@@ -69,3 +72,5 @@ func _finish(at: Vector3) -> void:
 		var radius := burst_radius * player.area_multiplier
 		_blast(at, radius, burst_damage * damage_scale(), 6.0)
 		Fx.ring(at, radius, color)
+		Fx.burst(&"wisps", at + Vector3.UP, color)
+		Audio.play("slam", 1.3, -4.0)

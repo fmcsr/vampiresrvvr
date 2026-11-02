@@ -68,11 +68,16 @@ static func format_number(number: float) -> String:
 	return str(snappedf(number, 0.01))
 
 
-## Bordered, padded button. It never takes focus, so the keyboard can't press it by accident.
+## Bordered, padded button with click and hover sounds. It never takes focus, so the keyboard
+## can't press it by accident.
 static func button(text: String, accent: Color, font_size := 16) -> Button:
 	var node := Button.new()
 	node.text = text
 	node.focus_mode = Control.FOCUS_NONE
+	node.pressed.connect(Audio.play.bind("ui_click"))
+	node.mouse_entered.connect(func() -> void:
+		if not node.disabled:
+			Audio.play("ui_hover"))
 	node.add_theme_font_size_override("font_size", font_size)
 	node.add_theme_color_override("font_disabled_color", Color(1.0, 1.0, 1.0, 0.3))
 	var states := {

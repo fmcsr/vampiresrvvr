@@ -1,12 +1,16 @@
 class_name PauseScreen
 extends CanvasLayer
-## Pause screen opened with Esc, with the list of controls. Main handles the pausing itself.
+## Pause screen opened with Esc: the list of controls next to the settings. Main handles the
+## pausing itself.
 
 signal toggle_requested
 ## The player wants to withdraw from the run; it counts as a failure and the equipment is lost.
 signal abandon_requested
 
+const HEADING_COLOR := Color(1.0, 0.85, 0.55)
+
 var _column: VBoxContainer
+var _controls: VBoxContainer
 
 
 func _ready() -> void:
@@ -27,7 +31,6 @@ func setup(player: Player) -> void:
 	_add_line(UiKit.key_name("pause"), "Resume")
 	if OS.is_debug_build():
 		_add_line("SHIFT+T", "Test: skip ahead 1 minute")
-	_column.add_child(Control.new())
 	var abandon := UiKit.button("Withdraw from Run — equipped gear is lost", Color(0.9, 0.35, 0.3), 18)
 	abandon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	abandon.pressed.connect(abandon_requested.emit)
@@ -51,21 +54,34 @@ func _build() -> void:
 	add_child(center)
 
 	_column = VBoxContainer.new()
-	_column.add_theme_constant_override("separation", 10)
+	_column.add_theme_constant_override("separation", 24)
 	center.add_child(_column)
 
-	var title := UiKit.label("PAUSED", 52, Color(1.0, 0.85, 0.55))
+	var title := UiKit.label("PAUSED", 52, HEADING_COLOR)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_column.add_child(title)
-	_column.add_child(Control.new())
+
+	# Controls on the left, settings on the right.
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 56)
+	_column.add_child(columns)
+	_controls = VBoxContainer.new()
+	_controls.add_theme_constant_override("separation", 10)
+	columns.add_child(_controls)
+	_controls.add_child(UiKit.label("CONTROLS", 22, HEADING_COLOR))
+	var settings := VBoxContainer.new()
+	settings.add_theme_constant_override("separation", 14)
+	columns.add_child(settings)
+	settings.add_child(UiKit.label("SETTINGS", 22, HEADING_COLOR))
+	settings.add_child(SettingsPanel.new())
 
 
 func _add_line(key: String, description: String) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	var key_label := UiKit.label(key, 20, Color(1.0, 0.9, 0.6))
-	key_label.custom_minimum_size.x = 130
+	key_label.custom_minimum_size.x = 110
 	key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(key_label)
 	row.add_child(UiKit.label(description, 20, Color(0.92, 0.9, 0.86)))
-	_column.add_child(row)
+	_controls.add_child(row)

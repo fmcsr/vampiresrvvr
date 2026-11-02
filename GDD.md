@@ -1,6 +1,6 @@
 # Game Design Document (GDD) — Working Title: *vampiresrvvr*
 
-> Version 0.6 · 1 November 2026 · Status: prototype v0.4 playable
+> Version 0.7 · 2 November 2026 · Status: prototype v0.4 playable; v0.5 step 1 (sound and game feel) done
 
 ## 1. Concept
 
@@ -26,11 +26,13 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 | Loss rule | If you don't make it out, you lose the run loot **and your entry gear** (Tarkov style) |
 | Map | Handcrafted fixed maps; gate, chest and elite positions are random each run |
 | Visuals | Stylized low-poly (starting with KayKit, CC0), toon shader, dark, high-contrast lighting |
+| Audio | CC0 sound packs from OpenGameArt plus a few synthesized sounds; CC0 music for the camp, the run and boss fights / the final escape |
+| Game feel | Damage numbers on every hit (can be turned off), particle bursts, hit-stop on big impacts, red screen edges and a heartbeat at low health |
 | Theme | Dark fantasy: cursed lands, skeletons, demons |
 | Run length | 15 min to the final boss (~17 min including the exit) |
 | Bosses | Mini-bosses at minutes 5 and 10, final boss at minute 15 |
 | Final exit timer | 90 s countdown after the final boss dies |
-| Camp | Menu screen with Equipment, Skills, Shop and Core Tree tabs |
+| Camp | Menu screen with Equipment, Skills, Shop, Core Tree and Settings tabs |
 | Items | Shop + run loot; Diablo-style rarity and random affixes |
 | Core Tree | Branching tree: Might, Resilience, Fortune |
 | Core sources | Mini-boss: 1 (run loot, at risk); final boss: 3 (safe immediately) |
@@ -98,7 +100,7 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 
 **Core Tree:** Three branches grow from the central "Essence": **Might** (damage, attack speed, power area → Doom Master: cooldown −10%), **Resilience** (health, damage reduction, health regen → Undying: damage reduction 8%), **Fortune** (gold, speed, pickup radius, cooldown → Lucky Star: item find +30%). Each branch has 6 nodes costing 1-2-2-3-3-4; the full tree costs 45 cores. A node can be unlocked once any node it connects to is unlocked.
 
-**Saving:** `user://profile.json` (on macOS: `~/Library/Application Support/Godot/app_userdata/vampiresrvvr/`). The game saves automatically after every change.
+**Saving:** `user://profile.json` (on macOS: `~/Library/Application Support/Godot/app_userdata/vampiresrvvr/`). The game saves automatically after every change. Settings (volumes, damage numbers, screen shake) are kept in `user://settings.cfg`.
 
 **Later:** Unlocking new characters with cores; character-specific power pools.
 
@@ -176,19 +178,29 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - [x] Character level (XP is kept only on escape) and skill points
 - [x] Extra: HUD shield indicator for Bone Shield, per-power Mastery boons, old save migration, automated test that tries every power option across 6 loadouts
 
-### v0.5 — Visual pass
-- [ ] KayKit models, toon shader, outline, lighting
-- [ ] Juice effects
+### v0.5 — Visual pass (in progress)
+**Step 1, sound and game feel ✅ (2 November 2026)**
+- [x] Sound effects from six CC0 packs plus synthesized XP, level-up, core, gate hum, heartbeat and fire sounds (`audio/CREDITS.md`)
+- [x] Music: camp, run, and boss fights / final escape, with crossfades
+- [x] Damage numbers on every hit: sized by hit strength, tinted by power, quick hits on one enemy add up
+- [x] Particle bursts: hit sparks, bone shards, gore, dust, embers, ice shards, soul wisps, glints
+- [x] Hit-stop on big impacts, slow motion when a boss dies, enemies squash when hit
+- [x] Red screen edges on hits; heartbeat and pulse at low health; a gate hum that rises while extracting; a ticking clock in the last 10 seconds
+- [x] Settings: master, music and effects volume, damage numbers, screen shake (pause screen and camp)
+
+**Step 2, art**
+- [ ] KayKit models and animations, toon shader, outline
+- [ ] Environment (dungeon pieces, torches) and lighting
 
 ## 10. Open Questions
 
 - The game's name
 
-## 11. Prototype Notes (v0.4)
+## 11. Prototype Notes (v0.5)
 
 **Running:** Godot 4.7 → Import → `project.godot` in this folder → F5. The game opens in Camp; press "Start Run" to begin a run. To reset the profile, just delete the save file (see Section 6).
 
-**Controls:** WASD to move (the character faces the mouse) · the sword swings automatically · 1-2-3-4 for loadout powers (chosen in the Skills tab) · Esc to pause · pick boons with the mouse · to exit through a gate, stand in the ring for 3 s without taking damage.
+**Controls:** WASD to move (the character faces the mouse) · the sword swings automatically · 1-2-3-4 for loadout powers (chosen in the Skills tab) · Esc to pause (settings are there too) · pick boons with the mouse · to exit through a gate, stand in the ring for 3 s without taking damage.
 
 **Test shortcut:** Shift+T fast-forwards time by 1 minute (only in editor/debug runs). Press it 4–5 times to try out the bosses and gates.
 
@@ -214,10 +226,16 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - Stat names and caps: `scripts/meta/stats.gd`
 - Starting gold and number of shop wares: `scripts/autoload/profile.gd`
 - Chance of an item from a chest: `Chests` node → `item_chance`
+- Sound mix (volume, pitch variation, how many at once, minimum gap) and music tracks: `scripts/autoload/audio.gd` → `SOUNDS` and `MUSIC`
+- Which pack file becomes which sound: `tools/import_sfx.py`; synthesized sounds: `tools/synth_sfx.py`
+- Particle bursts (count, speed, size, color, glow): `scripts/fx/particle_bursts.gd` → `KINDS`
+- Damage numbers (lifetime, size, merging): `scripts/fx/damage_numbers.gd`
+- Enemy death sound and particles: Feedback group in `resources/enemies/*.tres`
+- Hit-stop: `Game.hit_stop()` calls in `boss.gd`, `earthquake_leap.gd` and `heavens_wrath.gd`
 
 **Automated tests** (from the project folder, using the binary inside the Godot app; `--no-save` protects the real save):
 - `Godot --headless --path . --fixed-fps 60 res://tests/smoke_test.tscn -- --no-save --scenario=<name>`
-- Scenarios: `systems` (4 min of gameplay), `death` (death, equipment loss, return to Camp), `early_exit` (early escape, XP goes to character level), `final_exit` (final escape), `timeout` (gate closing, XP loss), `boss_view` (attacks of all three bosses), `hub` (shop, equipment, Core Tree, skill tree rules, saving, old save migration), `powers --set=A..F` (six loadouts that together run all 20 options of the 10 powers in a live run)
+- Scenarios: `systems` (4 min of gameplay, plus checks for sounds, music, damage numbers and particles), `death` (death, equipment loss, return to Camp), `early_exit` (early escape, XP goes to character level), `final_exit` (final escape), `timeout` (gate closing, XP loss), `boss_view` (attacks of all three bosses), `hub` (shop, equipment, Core Tree, skill tree rules, saving, old save migration), `powers --set=A..F` (six loadouts that together run all 20 options of the 10 powers in a live run)
 - A failing scenario exits with code 1; remove `--headless` and add `--screenshots=/absolute/folder` to take screenshots (add `--real-health` for a normal health bar).
 
 **Known limitations:**
@@ -225,4 +243,4 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - Ultimate powers unlock after 8 points (around level 5); a new character has no ultimate.
 - Items can't be compared (no tooltip showing the difference from the equipped item); the stash is unlimited.
 - Enemies walk in straight lines (no navigation); they slide around pillars.
-- No damage numbers, sound or particle effects (planned for v0.5).
+- Sounds and music were picked from file names, descriptions and loudness measurements, not by ear; the mix needs a listening pass.

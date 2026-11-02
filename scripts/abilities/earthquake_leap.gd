@@ -3,6 +3,9 @@ extends Ability
 ## landing and stuns enemies. Enhanced: stun +0.6 s. Aftershock: the landing spot keeps shaking for a while.
 ## Winged Leap: cooldown −3 s.
 
+const DUST_COLOR := Color(0.5, 0.42, 0.33, 0.7)
+const ROCK_COLOR := Color(0.45, 0.38, 0.3)
+
 @export var damage := 45.0
 @export var radius := 4.0
 @export var max_distance := 9.0
@@ -36,6 +39,7 @@ func activate() -> void:
 	offset = offset.limit_length(max_distance)
 	player.start_dash(offset / leap_duration, leap_duration)
 	_leaping = true
+	Audio.play("swing", 0.7, 6.0)
 
 
 func _tick(delta: float) -> void:
@@ -53,11 +57,17 @@ func _tick(delta: float) -> void:
 func _land() -> void:
 	var center := player.global_position
 	var final_radius := radius * player.area_multiplier
-	for enemy in _blast(center, final_radius, damage * damage_scale(), 6.0):
+	var hit := _blast(center, final_radius, damage * damage_scale(), 6.0)
+	for enemy in hit:
 		if enemy.is_alive:
 			enemy.freeze(stun_duration)
 	Fx.ring(center, final_radius, color)
+	Fx.burst(&"dust", center, DUST_COLOR)
+	Fx.burst(&"bones", center + Vector3.UP * 0.3, ROCK_COLOR, 0.8)
+	Audio.play("slam")
 	Game.shake(0.45)
+	if not hit.is_empty():
+		Game.hit_stop(0.05)
 	if choice == "a":
 		_quake_center = center
 		_quake_radius = final_radius

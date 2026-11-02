@@ -19,6 +19,13 @@ extends Resource
 ## Spawn weight relative to the other types.
 @export var spawn_weight := 1.0
 
+@export_group("Feedback")
+## Particle burst when it dies (a ParticleBursts kind) and its color.
+@export var death_burst := &"bones"
+@export var death_color := Color(0.88, 0.85, 0.75)
+## Sound played when it dies (an id from Audio.SOUNDS).
+@export var death_sound := "kill_bone"
+
 var _material: StandardMaterial3D
 
 

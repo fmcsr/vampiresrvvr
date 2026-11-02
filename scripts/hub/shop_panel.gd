@@ -50,5 +50,6 @@ func _offer(item: Item) -> Control:
 	var buy := UiKit.button("Buy — %d gold" % item.price(), GOLD_COLOR, 15)
 	buy.disabled = Profile.gold < item.price()
 	buy.pressed.connect(Profile.buy.bind(item))
+	buy.pressed.connect(func() -> void: Audio.play("gold"))
 	column.add_child(buy)
 	return panel

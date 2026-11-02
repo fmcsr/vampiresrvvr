@@ -87,6 +87,7 @@ func _slot_card(slot: String) -> Control:
 		var remove := UiKit.button("Unequip", Color(0.7, 0.7, 0.75), 14)
 		remove.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		remove.pressed.connect(Profile.unequip.bind(slot))
+		remove.pressed.connect(func() -> void: Audio.play("unequip"))
 		row.add_child(remove)
 	else:
 		var empty := UiKit.label("Empty", 17, DIM_COLOR)
@@ -110,9 +111,11 @@ func _stash_row(item: Item) -> Control:
 	row.add_child(buttons)
 	var equip := UiKit.button("Equip", Color(0.5, 0.9, 0.65), 15)
 	equip.pressed.connect(Profile.equip.bind(item))
+	equip.pressed.connect(func() -> void: Audio.play("equip"))
 	buttons.add_child(equip)
 	var sell := UiKit.button("Sell  +%d" % item.sell_price(), GOLD_COLOR, 15)
 	sell.pressed.connect(Profile.sell.bind(item))
+	sell.pressed.connect(func() -> void: Audio.play("gold"))
 	buttons.add_child(sell)
 	return panel
 

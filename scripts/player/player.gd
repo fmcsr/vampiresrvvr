@@ -21,7 +21,11 @@ const BODY_RADIUS := 0.45
 const ABILITY_ACTIONS: Array[String] = ["ability_1", "ability_2", "ability_3", "ability_4"]
 const ENEMY_COLLISION_BIT := 4
 const HURT_FLASH_TIME := 0.12
+const HURT_COLOR := Color(1.0, 0.25, 0.2)
 const SLASH_COLOR := Color(0.85, 0.9, 1.0)
+const LEVEL_UP_COLOR := Color(0.75, 0.6, 1.0)
+## Hit sparks are shown on at most this many enemies per swing.
+const MAX_SWING_SPARKS := 3
 ## Model spin speed during Whirlwind (rad/s).
 const SPIN_SPEED := 18.0
 
@@ -180,9 +184,13 @@ func take_damage(amount: float) -> void:
 	damaged.emit(amount)
 	_hurt_flash_time = HURT_FLASH_TIME
 	_body_mesh.material_override = _hurt_material
+	Fx.burst(&"sparks", global_position + Vector3.UP, HURT_COLOR, 0.5)
+	Audio.play("player_hurt")
 	Game.shake(0.2)
 	if health <= 0.0:
 		_is_dead = true
+		Fx.burst(&"gore", global_position + Vector3.UP, HURT_COLOR)
+		Audio.play("player_death")
 		died.emit()
 
 
@@ -208,6 +216,9 @@ func add_xp(amount: int) -> void:
 	while xp >= xp_required():
 		xp -= xp_required()
 		level += 1
+		Fx.burst(&"ring", global_position + Vector3.UP * 0.5, LEVEL_UP_COLOR)
+		Fx.burst(&"glints", global_position + Vector3.UP, LEVEL_UP_COLOR)
+		Audio.play("level_up")
 		leveled_up.emit(level)
 	xp_changed.emit(xp, xp_required(), level)
 
@@ -328,11 +339,18 @@ func _update_auto_attack(delta: float) -> void:
 	var arc_degrees := minf(attack_arc_degrees + BoonLibrary.total(self, "arc"), 360.0)
 	var half_angle := deg_to_rad(arc_degrees * 0.5)
 	var damage := attack_damage * damage_multiplier()
-	for enemy in Game.enemies_in_cone(global_position, direction, reach, half_angle):
+	var hit := Game.enemies_in_cone(global_position, direction, reach, half_angle)
+	for i in hit.size():
+		var enemy := hit[i]
 		var push := enemy.global_position - global_position
 		push.y = 0.0
+		if i < MAX_SWING_SPARKS:
+			Fx.burst(&"sparks", enemy.global_position + Vector3.UP * 0.9, SLASH_COLOR, 0.5)
 		enemy.take_damage(damage, push.normalized() * attack_knockback)
 	Fx.slash(global_position, direction, reach, half_angle, SLASH_COLOR)
+	Audio.play("swing")
+	if not hit.is_empty():
+		Audio.play("hit")
 
 
 ## Boons (in-run) and permanent bonuses (equipment, core tree) are combined here.

@@ -74,6 +74,7 @@ func refresh() -> void:
 
 ## On failure, shows the reason; on success the profile changes and the panel refreshes by itself.
 func _act(error: String) -> void:
+	Audio.play("ui_confirm" if error == "" else "ui_error")
 	_message = error
 	if error != "":
 		refresh()
