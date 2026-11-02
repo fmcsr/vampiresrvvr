@@ -1,0 +1,94 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/world/arena.tscn" id="2_arena"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="4_camera_rig"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_spawner.gd" id="5_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="6_enemy"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy_type.gd" id="7_enemy_type"]
+[ext_resource type="Resource" path="res://resources/enemies/skeleton.tres" id="8_skeleton"]
+[ext_resource type="Resource" path="res://resources/enemies/ghoul.tres" id="9_ghoul"]
+[ext_resource type="Resource" path="res://resources/enemies/brute.tres" id="10_brute"]
+[ext_resource type="Script" path="res://scripts/pickups/pickup_manager.gd" id="11_pickups"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="12_hud"]
+[ext_resource type="Script" path="res://scripts/ui/level_up_screen.gd" id="13_level_up"]
+[ext_resource type="Script" path="res://scripts/ui/pause_screen.gd" id="14_pause"]
+[ext_resource type="Script" path="res://scripts/ui/game_over_screen.gd" id="15_game_over"]
+[ext_resource type="Script" path="res://scripts/run/run_director.gd" id="16_director"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/boss.tscn" id="17_boss"]
+[ext_resource type="Script" path="res://scripts/enemies/boss_type.gd" id="18_boss_type"]
+[ext_resource type="Resource" path="res://resources/bosses/grave_warden.tres" id="19_grave_warden"]
+[ext_resource type="Resource" path="res://resources/bosses/blood_butcher.tres" id="20_blood_butcher"]
+[ext_resource type="Resource" path="res://resources/bosses/bone_king.tres" id="21_bone_king"]
+[ext_resource type="Script" path="res://scripts/loot/chest_manager.gd" id="22_chests"]
+
+[sub_resource type="Environment" id="Environment_night"]
+background_mode = 1
+background_color = Color(0.02, 0.02, 0.03, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.32, 0.34, 0.45, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.9
+glow_bloom = 0.05
+fog_enabled = true
+fog_light_color = Color(0.04, 0.04, 0.07, 1)
+fog_density = 0.006
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_night")
+
+[node name="Moon" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-50, -35, 0)
+light_color = Color(0.55, 0.62, 0.85, 1)
+light_energy = 0.7
+shadow_enabled = true
+directional_shadow_max_distance = 60.0
+
+[node name="Arena" parent="." instance=ExtResource("2_arena")]
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+
+[node name="CameraRig" type="Node3D" parent="." node_paths=PackedStringArray("target")]
+script = ExtResource("4_camera_rig")
+target = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+current = true
+fov = 45.0
+
+[node name="EnemySpawner" type="Node3D" parent="."]
+script = ExtResource("5_spawner")
+enemy_scene = ExtResource("6_enemy")
+enemy_types = Array[ExtResource("7_enemy_type")]([ExtResource("8_skeleton"), ExtResource("9_ghoul"), ExtResource("10_brute")])
+
+[node name="RunDirector" type="Node3D" parent="."]
+script = ExtResource("16_director")
+boss_scene = ExtResource("17_boss")
+mini_bosses = Array[ExtResource("18_boss_type")]([ExtResource("19_grave_warden"), ExtResource("20_blood_butcher")])
+final_boss = ExtResource("21_bone_king")
+
+[node name="Chests" type="Node3D" parent="."]
+script = ExtResource("22_chests")
+
+[node name="Pickups" type="Node3D" parent="."]
+script = ExtResource("11_pickups")
+
+[node name="Dynamic" type="Node3D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("12_hud")
+
+[node name="LevelUpScreen" type="CanvasLayer" parent="."]
+script = ExtResource("13_level_up")
+
+[node name="PauseScreen" type="CanvasLayer" parent="."]
+script = ExtResource("14_pause")
+
+[node name="GameOverScreen" type="CanvasLayer" parent="."]
+script = ExtResource("15_game_over")

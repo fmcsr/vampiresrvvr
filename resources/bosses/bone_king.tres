@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BossType" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/boss_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+display_name = "Bone King"
+color = Color(0.85, 0.8, 0.6, 1)
+size = 3.0
+max_health = 5200.0
+move_speed = 2.8
+contact_damage = 25.0
+attack_interval = 1.0
+knockback_resistance = 1.0
+xp_value = 80
+special_interval = 3.5
+slam_damage = 40.0
+slam_radius = 6.5
+slam_windup = 1.1
+charge_damage = 35.0
+charge_distance = 16.0
+charge_speed = 22.0
+charge_windup = 0.85
+summon_count = 10
+gold_reward = 300
+core_reward = 3
+is_final = true

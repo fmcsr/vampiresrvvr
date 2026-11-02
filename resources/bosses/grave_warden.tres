@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BossType" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/boss_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+display_name = "Grave Warden"
+color = Color(0.55, 0.52, 0.45, 1)
+size = 2.4
+max_health = 1200.0
+move_speed = 2.6
+contact_damage = 18.0
+attack_interval = 1.0
+knockback_resistance = 1.0
+xp_value = 25
+special_interval = 4.0
+slam_damage = 30.0
+slam_radius = 5.0
+slam_windup = 1.0
+charge_damage = 25.0
+charge_distance = 14.0
+charge_speed = 20.0
+charge_windup = 0.9
+summon_count = 0
+gold_reward = 100
+core_reward = 1
+is_final = false

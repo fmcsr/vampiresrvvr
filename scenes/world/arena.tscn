@@ -1,0 +1,123 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" path="res://shaders/floor_grid.gdshader" id="1_floor"]
+[ext_resource type="PackedScene" path="res://scenes/world/pillar.tscn" id="2_pillar"]
+
+[sub_resource type="ShaderMaterial" id="Material_floor"]
+render_priority = 0
+shader = ExtResource("1_floor")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+material = SubResource("Material_floor")
+size = Vector2(124, 124)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.2, 0.19, 0.22, 1)
+roughness = 0.95
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_x"]
+material = SubResource("Material_wall")
+size = Vector3(124, 3, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_x"]
+size = Vector3(124, 3, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_z"]
+material = SubResource("Material_wall")
+size = Vector3(2, 3, 124)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_z"]
+size = Vector3(2, 3, 124)
+
+[node name="Arena" type="Node3D"]
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="North" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -61)
+
+[node name="Mesh" type="MeshInstance3D" parent="Walls/North"]
+mesh = SubResource("BoxMesh_wall_x")
+
+[node name="Collision" type="CollisionShape3D" parent="Walls/North"]
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="South" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 61)
+
+[node name="Mesh" type="MeshInstance3D" parent="Walls/South"]
+mesh = SubResource("BoxMesh_wall_x")
+
+[node name="Collision" type="CollisionShape3D" parent="Walls/South"]
+shape = SubResource("BoxShape3D_wall_x")
+
+[node name="West" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -61, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Walls/West"]
+mesh = SubResource("BoxMesh_wall_z")
+
+[node name="Collision" type="CollisionShape3D" parent="Walls/West"]
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="East" type="StaticBody3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Walls/East"]
+mesh = SubResource("BoxMesh_wall_z")
+
+[node name="Collision" type="CollisionShape3D" parent="Walls/East"]
+shape = SubResource("BoxShape3D_wall_z")
+
+[node name="Pillars" type="Node3D" parent="."]
+
+[node name="Pillar01" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, -9)
+
+[node name="Pillar02" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -14, 0, -11)
+
+[node name="Pillar03" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 14)
+
+[node name="Pillar04" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 16)
+
+[node name="Pillar05" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 0, 0, -26)
+
+[node name="Pillar06" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0, -22)
+
+[node name="Pillar07" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -34, 0, -28)
+
+[node name="Pillar08" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 30)
+
+[node name="Pillar09" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38, 0, 34)
+
+[node name="Pillar10" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 40)
+
+[node name="Pillar11" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -8, 0, -44)
+
+[node name="Pillar12" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46, 0, 4)
+
+[node name="Pillar13" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0, -4)
+
+[node name="Pillar14" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, -46)
+
+[node name="Pillar15" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -26, 0, 48)
+
+[node name="Pillar16" parent="Pillars" instance=ExtResource("2_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0, -40)

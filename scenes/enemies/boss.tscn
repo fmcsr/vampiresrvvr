@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="1_enemy"]
+[ext_resource type="Script" path="res://scripts/enemies/boss.gd" id="2_boss"]
+
+[sub_resource type="StandardMaterial3D" id="Material_crown"]
+albedo_color = Color(1, 0.8, 0.3, 1)
+emission_enabled = true
+emission = Color(1, 0.7, 0.2, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_crown"]
+material = SubResource("Material_crown")
+top_radius = 0.34
+bottom_radius = 0.3
+height = 0.22
+radial_segments = 8
+rings = 1
+
+[node name="Boss" instance=ExtResource("1_enemy")]
+script = ExtResource("2_boss")
+
+[node name="Crown" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.78, 0)
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_crown")

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="BossType" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/boss_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+display_name = "Blood Butcher"
+color = Color(0.6, 0.12, 0.1, 1)
+size = 2.5
+max_health = 2600.0
+move_speed = 3.2
+contact_damage = 22.0
+attack_interval = 1.0
+knockback_resistance = 1.0
+xp_value = 40
+special_interval = 3.2
+slam_damage = 35.0
+slam_radius = 5.5
+slam_windup = 0.9
+charge_damage = 30.0
+charge_distance = 18.0
+charge_speed = 24.0
+charge_windup = 0.75
+summon_count = 0
+gold_reward = 200
+core_reward = 1
+is_final = false

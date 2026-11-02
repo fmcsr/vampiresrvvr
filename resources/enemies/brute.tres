@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_type.gd" id="1_type"]
+
+[resource]
+script = ExtResource("1_type")
+display_name = "Bone Giant"
+color = Color(0.5, 0.17, 0.15, 1)
+size = 1.6
+max_health = 110.0
+move_speed = 2.2
+contact_damage = 15.0
+attack_interval = 1.2
+knockback_resistance = 0.7
+xp_value = 6
+unlock_time = 150.0
+spawn_weight = 0.18
