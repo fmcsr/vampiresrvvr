@@ -17,6 +17,7 @@ const SKILLS := {
 	"fire_wave": {
 		"title": "Fire Wave", "tier": 0, "color": Color(1.0, 0.45, 0.15),
 		"script": "res://scripts/abilities/fire_wave.gd",
+		"cast": ["Spellcast_Shoot", 0.5],
 		"text": "Sprays a cone of flame in the aim direction, knocking enemies back.",
 		"enhanced": "Range increases by 25%.",
 		"a": ["Embers", "Enemies hit burn for 3 s."],
@@ -33,6 +34,7 @@ const SKILLS := {
 	"soul_chain": {
 		"title": "Soul Chain", "tier": 0, "color": Color(0.55, 0.9, 0.85),
 		"script": "res://scripts/abilities/soul_chain.gd",
+		"cast": ["Throw", 0.55],
 		"text": "Pulls nearby enemies to you and damages them. Pair it with area powers.",
 		"enhanced": "Pull range increases by 30%.",
 		"a": ["Shackles", "Pulled enemies freeze for 1.5 s."],
@@ -41,6 +43,7 @@ const SKILLS := {
 	"frost_nova": {
 		"title": "Frost Nova", "tier": 1, "color": Color(0.45, 0.85, 1.0),
 		"script": "res://scripts/abilities/frost_nova.gd",
+		"cast": ["Spellcast_Raise", 0.6],
 		"text": "Freezes enemies around you and deals light damage.",
 		"enhanced": "Freeze lasts 1 s longer.",
 		"a": ["Shatter", "Frozen enemies take 25% more damage."],
@@ -57,6 +60,7 @@ const SKILLS := {
 	"bone_shield": {
 		"title": "Bone Shield", "tier": 1, "color": Color(0.9, 0.88, 0.75),
 		"script": "res://scripts/abilities/bone_shield.gd",
+		"cast": ["Block", 0.5],
 		"text": "Gain a shield that absorbs damage for 6 s.",
 		"enhanced": "While the shield holds, enemies that hit you take damage.",
 		"a": ["Bone Burst", "Damages nearby enemies when the shield breaks or expires."],
@@ -73,6 +77,7 @@ const SKILLS := {
 	"war_cry": {
 		"title": "War Cry", "tier": 2, "color": Color(1.0, 0.3, 0.3),
 		"script": "res://scripts/abilities/war_cry.gd",
+		"cast": ["Cheer", 0.8],
 		"text": "Your damage and attack speed increase by 25% for 6 s; nearby enemies are knocked back.",
 		"enhanced": "The effect lasts 2 s longer.",
 		"a": ["Terror", "Enemies are knocked back twice as far and freeze for 1 s."],
@@ -81,6 +86,7 @@ const SKILLS := {
 	"heavens_wrath": {
 		"title": "Heaven's Wrath", "tier": 3, "color": Color(1.0, 0.85, 0.35), "ultimate": true,
 		"script": "res://scripts/abilities/heavens_wrath.gd",
+		"cast": ["Spellcast_Raise", 0.7],
 		"text": "After a short warning, calls down a huge blast of light on the aim point.",
 		"enhanced": "Blast area increases by 20%.",
 		"a": ["Triple Strike", "Three blasts land one after another; higher total damage."],
@@ -89,6 +95,7 @@ const SKILLS := {
 	"sword_rain": {
 		"title": "Sword Rain", "tier": 3, "color": Color(0.7, 0.85, 1.0), "ultimate": true,
 		"script": "res://scripts/abilities/sword_rain.gd",
+		"cast": ["Spellcast_Long", 0.9],
 		"text": "For 4 s, swords rain down from the sky on enemies around you.",
 		"enhanced": "The rain lasts 2 s longer.",
 		"a": ["Blade Storm", "Swords fall twice as often."],
@@ -99,6 +106,12 @@ const SKILLS := {
 
 static func info(skill_id: String) -> Dictionary:
 	return SKILLS[skill_id]
+
+
+## Upper-body animation played when the power fires: [animation, seconds], or [] when the
+## power animates itself (Whirlwind, Shadow Dash, Earthquake Leap).
+static func cast_animation(skill_id: String) -> Array:
+	return info(skill_id).get("cast", [])
 
 
 static func title(skill_id: String) -> String:

@@ -38,6 +38,8 @@ func activate() -> void:
 	offset.y = 0.0
 	offset = offset.limit_length(max_distance)
 	player.start_dash(offset / leap_duration, leap_duration)
+	# The jump clip includes the landing, so it runs a little past the leap itself.
+	player.animator.play_full(&"Jump_Full_Short", leap_duration + 0.35)
 	_leaping = true
 	Audio.play("swing", 0.7, 6.0)
 

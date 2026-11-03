@@ -35,6 +35,7 @@ func activate() -> void:
 	if direction == Vector3.ZERO:
 		direction = player.aim_direction()
 	player.start_dash(direction * (distance / duration), duration)
+	player.play_dodge(direction, duration + 0.2)
 	_active = true
 	_last_position = player.global_position
 	_hit.clear()

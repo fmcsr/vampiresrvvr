@@ -2,7 +2,8 @@ class_name Player
 extends CharacterBody3D
 ## The player character: movement, mouse aiming, automatic Sword Swing, the 4 loadout powers,
 ## health, shield and in-run level. Permanent bonuses (equipment, core tree) and the power
-## loadout (skill tree) are read from the profile at the start of a run.
+## loadout (skill tree) are read from the profile at the start of a run. The body is the KayKit
+## Knight, animated by a CharacterAnimator.
 
 signal health_changed(current: float, maximum: float)
 ## Emitted when damage actually lands (hits during a dash or absorbed by the shield don't count). Interrupts the extraction channel.
@@ -22,6 +23,19 @@ const ABILITY_ACTIONS: Array[String] = ["ability_1", "ability_2", "ability_3", "
 const ENEMY_COLLISION_BIT := 4
 const HURT_FLASH_TIME := 0.12
 const HURT_COLOR := Color(1.0, 0.25, 0.2)
+const MODEL_SCENE := preload("res://models/kaykit/adventurers/Knight.glb")
+## The Knight is about 2.5 m tall at scale 1; this brings it to the 2 m of the collision capsule.
+const MODEL_SCALE := 0.8
+const MODEL_PROPS: Array[String] = ["1H_Sword", "Badge_Shield"]
+## Sword Swing animations, used in turn.
+const SWING_ANIMATIONS: Array[StringName] = [&"1H_Melee_Attack_Slice_Horizontal", &"1H_Melee_Attack_Slice_Diagonal",
+		&"1H_Melee_Attack_Chop"]
+## A hit taking at least this share of max health makes the Knight flinch.
+const FLINCH_DAMAGE_RATIO := 0.08
+## The Knight turns to the enemy it swings at for this long, then back to the mouse.
+const SWING_FACE_TIME := 0.3
+## How quickly the model turns to its target direction (higher is snappier).
+const TURN_SHARPNESS := 25.0
 const SLASH_COLOR := Color(0.85, 0.9, 1.0)
 const LEVEL_UP_COLOR := Color(0.75, 0.6, 1.0)
 ## Hit sparks are shown on at most this many enemies per swing.
@@ -66,6 +80,7 @@ var run_xp := 0
 var aim_point := Vector3.ZERO
 ## Powers in key order (ability_1..ability_4); an empty slot is null.
 var abilities: Array[Ability] = []
+var animator: CharacterAnimator
 
 var _boon_ranks: Dictionary[String, int] = {}
 var _modifiers: Array[Dictionary] = [{}, {}, {}, {}]
@@ -79,19 +94,26 @@ var _is_dead := false
 var _is_spinning := false
 ## Permanent bonuses read from the profile at the start of the run: {stat: value}.
 var _meta: Dictionary = {}
+var _swing_index := 0
+var _swing_direction := Vector3.ZERO
+var _swing_face_left := 0.0
+## The model's visible meshes, for the red hurt overlay.
+var _meshes: Array[MeshInstance3D] = []
 
 static var _hurt_material: StandardMaterial3D
 
 @onready var _model: Node3D = $Model
-@onready var _body_mesh: MeshInstance3D = $Model/Body
 
 
 func _ready() -> void:
 	if _hurt_material == null:
+		# Drawn over the model's own materials for a moment when hit.
 		_hurt_material = StandardMaterial3D.new()
-		_hurt_material.albedo_color = Color(1.0, 0.25, 0.2)
-		_hurt_material.emission_enabled = true
-		_hurt_material.emission = Color(1.0, 0.1, 0.05)
+		_hurt_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_hurt_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_hurt_material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		_hurt_material.albedo_color = Color(1.0, 0.15, 0.1, 0.6)
+	_build_model()
 	_meta = Profile.bonuses()
 	_recalculate_stats()
 	health = max_health
@@ -105,10 +127,8 @@ func _physics_process(delta: float) -> void:
 	_update_aim()
 	_tick_timers(delta)
 	_move()
-	if _is_spinning:
-		_model.rotation.y += SPIN_SPEED * delta
-	else:
-		_model.rotation.y = _yaw_towards(aim_direction())
+	_update_facing(delta)
+	_update_locomotion()
 	_update_auto_attack(delta)
 	for i in abilities.size():
 		if abilities[i] and Input.is_action_pressed(ABILITY_ACTIONS[i]):
@@ -162,8 +182,13 @@ func modifier(kind: Modifier) -> float:
 	return total
 
 
+## Whirlwind: the model turns while holding the spinning pose.
 func set_spinning(enabled: bool) -> void:
 	_is_spinning = enabled
+	if enabled:
+		animator.hold(&"2H_Melee_Attack_Spinning", 1.2)
+	else:
+		animator.release()
 
 
 func take_damage(amount: float) -> void:
@@ -183,7 +208,7 @@ func take_damage(amount: float) -> void:
 	health_changed.emit(health, max_health)
 	damaged.emit(amount)
 	_hurt_flash_time = HURT_FLASH_TIME
-	_body_mesh.material_override = _hurt_material
+	_set_hurt_overlay(true)
 	Fx.burst(&"sparks", global_position + Vector3.UP, HURT_COLOR, 0.5)
 	Audio.play("player_hurt")
 	Game.shake(0.2)
@@ -191,7 +216,12 @@ func take_damage(amount: float) -> void:
 		_is_dead = true
 		Fx.burst(&"gore", global_position + Vector3.UP, HURT_COLOR)
 		Audio.play("player_death")
+		# The fall keeps playing under the result screen, which pauses the game.
+		animator.process_mode = Node.PROCESS_MODE_ALWAYS
+		animator.hold(&"Death_A")
 		died.emit()
+	elif amount >= FLINCH_DAMAGE_RATIO * max_health and not animator.is_upper_busy():
+		animator.play_upper(&"Hit_A", 0.35)
 
 
 func heal(amount: float) -> void:
@@ -254,6 +284,60 @@ func is_dashing() -> bool:
 	return _dash_time_left > 0.0
 
 
+## Shadow Dash: the dodge roll that matches the dash direction relative to where the Knight faces.
+func play_dodge(direction: Vector3, seconds: float) -> void:
+	var forward := -_model.global_basis.z
+	var right := _model.global_basis.x
+	var along := direction.dot(forward)
+	var across := direction.dot(right)
+	var animation := &"Dodge_Forward" if along >= 0.0 else &"Dodge_Backward"
+	if absf(across) > absf(along):
+		animation = &"Dodge_Right" if across > 0.0 else &"Dodge_Left"
+	animator.play_full(animation, seconds)
+
+
+## The Knight model: turned to face -Z like the rest of the game, scaled to the collision
+## capsule, holding only its sword and shield.
+func _build_model() -> void:
+	var model := MODEL_SCENE.instantiate() as Node3D
+	model.rotation.y = PI
+	model.scale = Vector3.ONE * MODEL_SCALE
+	_model.add_child(model)
+	ModelTools.keep_props(model, MODEL_PROPS)
+	for mesh in model.find_children("*", "MeshInstance3D", true, false):
+		if mesh.visible:
+			_meshes.append(mesh)
+	animator = CharacterAnimator.new()
+	model.add_child(animator)
+	animator.setup(MODEL_SCALE)
+
+
+## Faces the mouse, except right after a swing (the enemy it swung at) and while spinning.
+func _update_facing(delta: float) -> void:
+	if _is_spinning:
+		_model.rotation.y += SPIN_SPEED * delta
+		return
+	var target := aim_direction()
+	if _swing_face_left > 0.0:
+		_swing_face_left -= delta
+		target = _swing_direction
+	_model.rotation.y = lerp_angle(_model.rotation.y, _yaw_towards(target), 1.0 - exp(-TURN_SHARPNESS * delta))
+
+
+## Feeds the animator the movement relative to where the Knight faces.
+func _update_locomotion() -> void:
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	var forward := -_model.global_basis.z
+	var right := _model.global_basis.x
+	var direction := Vector2(flat.dot(right), flat.dot(forward)) / maxf(move_speed, 0.1)
+	animator.set_locomotion(direction, flat.length())
+
+
+func _set_hurt_overlay(enabled: bool) -> void:
+	for mesh in _meshes:
+		mesh.material_overlay = _hurt_material if enabled else null
+
+
 ## Builds the power nodes from the profile's loadout.
 func _build_abilities() -> void:
 	for i in ABILITY_ACTIONS.size():
@@ -289,7 +373,7 @@ func _tick_timers(delta: float) -> void:
 	if _hurt_flash_time > 0.0:
 		_hurt_flash_time -= delta
 		if _hurt_flash_time <= 0.0:
-			_body_mesh.material_override = null
+			_set_hurt_overlay(false)
 
 
 func _end_shield() -> void:
@@ -348,6 +432,10 @@ func _update_auto_attack(delta: float) -> void:
 			Fx.burst(&"sparks", enemy.global_position + Vector3.UP * 0.9, SLASH_COLOR, 0.5)
 		enemy.take_damage(damage, push.normalized() * attack_knockback)
 	Fx.slash(global_position, direction, reach, half_angle, SLASH_COLOR)
+	_swing_direction = direction
+	_swing_face_left = minf(_attack_timer, SWING_FACE_TIME)
+	animator.play_upper(SWING_ANIMATIONS[_swing_index], maxf(_attack_timer, 0.3))
+	_swing_index = (_swing_index + 1) % SWING_ANIMATIONS.size()
 	Audio.play("swing")
 	if not hit.is_empty():
 		Audio.play("hit")

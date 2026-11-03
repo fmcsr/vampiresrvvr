@@ -1,6 +1,6 @@
 # Game Design Document (GDD) — Working Title: *vampiresrvvr*
 
-> Version 0.7 · 2 November 2026 · Status: prototype v0.4 playable; v0.5 step 1 (sound and game feel) done
+> Version 0.8 · 3 November 2026 · Status: prototype v0.4 playable; v0.5 in progress (sound and game feel done, the Knight hero in)
 
 ## 1. Concept
 
@@ -25,7 +25,7 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 | Cores | Used both for permanent stat upgrades and for unlocking new characters and powers |
 | Loss rule | If you don't make it out, you lose the run loot **and your entry gear** (Tarkov style) |
 | Map | Handcrafted fixed maps; gate, chest and elite positions are random each run |
-| Visuals | Stylized low-poly (starting with KayKit, CC0), toon shader, dark, high-contrast lighting |
+| Visuals | Stylized low-poly KayKit characters (CC0): the Knight as the hero, the other adventurers enlarged as bosses, KayKit skeletons as the horde; toon shader, dark, high-contrast lighting |
 | Audio | CC0 sound packs from OpenGameArt plus a few synthesized sounds; CC0 music for the camp, the run and boss fights / the final escape |
 | Game feel | Damage numbers on every hit (can be turned off), particle bursts, hit-stop on big impacts, red screen edges and a heartbeat at low health |
 | Theme | Dark fantasy: cursed lands, skeletons, demons |
@@ -68,6 +68,7 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 
 > Note: If the player dies after the final boss is killed, they keep the final boss's cores and lose everything else.
 > If the game is closed mid-run, the run counts as failed on the next launch (equipped gear is lost). "Withdraw from Run" on the pause screen has the same result.
+> The free basic kit is entry gear too, but it costs nothing to take again, so a failed run only really costs the gear you paid for or found.
 
 **Run loot:**
 - **Gold:** The map starts with 8 chests; a new one is added every 45 s (up to 10). A chest gives 15 + (minute × 4) gold. Bosses drop 100 / 200 / 300 gold.
@@ -91,10 +92,10 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - Three slots: Weapon, Armor, Charm. Equipped items go into the run and are lost if it fails.
 - Rarity: Common (gray), Magic (blue), Rare (yellow), Legendary (orange). Each item has a base stat determined by its slot (weapon → damage, armor → health or damage reduction, charm → speed / cooldown / pickup / gold). Rarity raises the values and adds 1–3 random extra affixes.
 - Stats: damage, max health, move speed, cooldown (capped at −50%), attack speed, power area, pickup radius, health regen, damage reduction (capped at 60%), gold find, item find.
-- A new profile starts with three Common items equipped and 50 gold.
+- A new profile starts with the free basic kit equipped and 50 gold.
 
 **Shop:**
-- Basic items are always for sale at 60 gold (so a player who loses everything isn't left empty-handed).
+- **Free basic kit:** one basic item per slot (Rusty Sword, Tattered Robe, Bone Charm), free in the Shop or straight from an empty slot in the Equipment tab. Kit items can't be sold and you can hold one per slot, so a player who loses everything is never left empty-handed and there is nothing to farm. (Until v0.5 basic items cost 60 gold, more than the 50 starting gold.)
 - "Today's wares": 3 random items, refreshed after every run. Prices: Magic 180, Rare 420, Legendary 900.
 - Items in the stash sell for a quarter of their price.
 
@@ -188,9 +189,14 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - [x] Red screen edges on hits; heartbeat and pulse at low health; a gate hum that rises while extracting; a ticking clock in the last 10 seconds
 - [x] Settings: master, music and effects volume, damage numbers, screen shake (pause screen and camp)
 
-**Step 2, art**
-- [ ] KayKit models and animations, toon shader, outline
+**Step 2, art (in progress)**
+- [x] Benchmark: 300 animated KayKit skeletons cost about 1.5 ms when each is merged into one mesh and casts no shadow (10 ms as nine shadowed parts); `tests/perf_test.tscn`
+- [x] The Knight as the hero: blended running and strafing while facing the mouse, upper-body sword swings that turn to the enemy hit, an animation for every power, a flinch on big hits, a death fall
+- [ ] Skeleton horde: Skeleton Minion (soldier), Skeleton Rogue (the fast enemy, replaces the Ghoul), an enlarged Skeleton Warrior (Bone Giant); merged meshes, blob shadows
+- [ ] Adventurer bosses, enlarged: the Rogue (minute 5, with a new telegraphed arrow volley), the Barbarian (minute 10), the Mage as the necromancer Bone King (minute 15)
+- [ ] A "corrupted" look for the bosses (darker colors, glowing eyes, an aura), toon shader and outline
 - [ ] Environment (dungeon pieces, torches) and lighting
+- [ ] Later: the hooded Rogue as an elite enemy ("Hooded Stalker")
 
 ## 10. Open Questions
 
@@ -232,6 +238,8 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - Damage numbers (lifetime, size, merging): `scripts/fx/damage_numbers.gd`
 - Enemy death sound and particles: Feedback group in `resources/enemies/*.tres`
 - Hit-stop: `Game.hit_stop()` calls in `boss.gd`, `earthquake_leap.gd` and `heavens_wrath.gd`
+- Hero model, scale and shown weapons; swing animations and how long the Knight faces the enemy it hits: constants at the top of `scripts/player/player.gd`
+- Casting animation per power: `cast` in `scripts/skills/skill_library.gd`; blending, layers and run-cycle speed: `scripts/player/character_animator.gd`
 
 **Automated tests** (from the project folder, using the binary inside the Godot app; `--no-save` protects the real save):
 - `Godot --headless --path . --fixed-fps 60 res://tests/smoke_test.tscn -- --no-save --scenario=<name>`

@@ -50,6 +50,9 @@ func try_activate() -> bool:
 		return false
 	activate()
 	cooldown_left = cooldown_duration()
+	var cast := SkillLibrary.cast_animation(skill_id)
+	if not cast.is_empty():
+		player.animator.play_upper(cast[0], cast[1])
 	return true
 
 
