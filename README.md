@@ -4,9 +4,21 @@ A survivors-like with a Diablo-style camera and an extraction twist: fight throu
 
 > **Status:** early prototype (v0.5 in progress: sound, game feel, the Knight hero and the skeleton horde done; bosses and lighting next) · built with **Godot 4.7** · art in progress · working title
 
-![Escaping after the final boss: the gate is closing, the compass points to the exit](docs/screenshots/gameplay.png)
+![v0.5: the KayKit Knight against the skeleton horde, with Frost Nova and damage numbers](docs/screenshots/v0.5/horde.png)
 
-![The Diablo-style skill tree in the camp](docs/screenshots/skill-tree.png)
+## Development progress
+
+Screenshots from each version, newest first, so you can see how the game grows.
+
+**v0.5 (in progress): KayKit models, sound and game feel**
+
+![v0.5: the Knight's sword swing cutting through skeletons](docs/screenshots/v0.5/sword-swing.png)
+
+**v0.4: playable prototype with placeholder shapes**
+
+![v0.4: escaping after the final boss, the gate is closing and the compass points to the exit](docs/screenshots/gameplay.png)
+
+![v0.4: the Diablo-style skill tree in the camp](docs/screenshots/skill-tree.png)
 
 ## The game in one run
 
