@@ -15,12 +15,16 @@ extends Node
 ##   boss_view   spawns all three bosses and watches their attacks without killing them
 ##   hub         exercises profile and skill tree operations and shows every camp tab
 ##   powers      plays 30 s with loadout --set=A..F; the six sets cover all 20 options of the 10 powers
+##   horde       one skeleton at a time: its swing can be stepped out of and lands after the
+##               windup, ring spawns climb out of the ground first, corpses return to the pool
 ## For screenshots, drop --headless and append --screenshots=/absolute/folder/path
-## (add --real-health to keep normal health so the HUD looks like a real run).
+## (add --real-health to keep normal health so the HUD looks like a real run, and --time=<seconds>
+## to start the systems or powers scenario later in the run, e.g. --time=170 for every enemy type).
 
 const SYSTEMS_SECONDS := 240.0
 const BOSS_VIEW_SECONDS := 26.0
 const POWERS_SECONDS := 30.0
+const HORDE_SECONDS := 20.0
 const TIMEOUT_SECONDS := 1200.0
 const STARTING_EQUIPMENT := 3
 ## The systems scenario opens the pause screen once at this time, for a screenshot of it.
@@ -40,6 +44,8 @@ const POWER_SETS := {
 var _scenario := "systems"
 var _power_set := "A"
 var _real_health := false
+## Run time to start at (systems and powers scenarios); negative keeps the scenario's own.
+var _start_time := -1.0
 var _main: Node
 ## The camp scene (hub scenario); untyped because its script has no class_name.
 var _hub
@@ -64,6 +70,11 @@ var _portal_seen_at := -1.0
 var _pause_shot_frames := -1
 var _took_pause_shot := false
 var _took_low_health_shot := false
+var _horde_step := 0
+var _horde_mark := 0.0
+var _horde_health := 0.0
+var _horde_enemy: Enemy
+var _horde_ring: Array[Enemy] = []
 
 
 func _ready() -> void:
@@ -82,6 +93,8 @@ func _ready() -> void:
 			_power_set = arg.trim_prefix("--set=")
 		elif arg == "--real-health":
 			_real_health = true
+		elif arg.begins_with("--time="):
+			_start_time = float(arg.trim_prefix("--time="))
 	print("Scenario: %s%s" % [_scenario, " (set %s)" % _power_set if _scenario == "powers" else ""])
 	if _scenario == "hub":
 		_start_hub_scenario()
@@ -106,12 +119,18 @@ func _ready() -> void:
 		"boss_view":
 			Game.run_time = Game.director.final_boss_time - 2.0
 			_screenshot_times = [8.0, 14.0, 20.0]
+		"horde":
+			# Only the test's own enemies: no spawns, and the character neither moves nor attacks.
+			Game.spawner.intensity = 0.0
+			_player.set_physics_process(false)
 		"powers":
 			Game.run_time = 120.0
 			# A burst of frames to catch short effects (swing, spin, swords).
 			_screenshot_times = [6.0, 6.1, 6.2, 6.3, 6.4, 14.0, 24.0]
 			var equipped := _player.abilities.filter(func(ability: Ability) -> bool: return ability != null)
 			_expect(equipped.size() == 4, "all 4 loadout powers were built for the run")
+	if _start_time >= 0.0 and _scenario in ["systems", "powers"]:
+		Game.run_time = _start_time
 	# The character must not die outside the death scenario.
 	if not _real_health:
 		_player.base_max_health = 1000000.0
@@ -154,6 +173,8 @@ func _physics_process(delta: float) -> void:
 			_drive_exit(_scenario == "final_exit")
 		"timeout":
 			_kill_bosses()
+		"horde":
+			_drive_horde()
 	_peak_enemies = maxi(_peak_enemies, Game.enemies.size())
 	_peak_numbers = maxi(_peak_numbers, Game.damage_numbers.active_count())
 	if _elapsed >= _next_report:
@@ -220,6 +241,8 @@ func _time_limit() -> float:
 			return BOSS_VIEW_SECONDS
 		"powers":
 			return POWERS_SECONDS
+		"horde":
+			return HORDE_SECONDS
 	return TIMEOUT_SECONDS
 
 
@@ -252,6 +275,110 @@ func _drive_exit(wants_final: bool) -> void:
 	if portal.progress > 0.5 and not _took_channel_shot:
 		_took_channel_shot = true
 		_screenshot("channel")
+
+
+## One step at a time; each waits for the moment it checks.
+func _drive_horde() -> void:
+	var soldier: EnemyType = Game.spawner.enemy_types[0]
+	var since := _elapsed - _horde_mark
+	match _horde_step:
+		0:
+			_check_horde_models()
+			_horde_enemy = _spawn_test_enemy(soldier, _player.global_position + Vector3(0.0, 0.0, 1.0))
+			_horde_health = _player.health
+			_horde_step = 1
+		1:
+			# In reach it starts a swing; the character steps away before it lands.
+			if _horde_enemy._swing_left > 0.0:
+				_screenshot("swing")
+				_expect(_player.health == _horde_health, "no damage when a swing starts")
+				_move_player(_player.global_position + Vector3(5.0, 0.0, 0.0))
+				_horde_mark = _elapsed
+				_horde_step = 2
+		2:
+			if since > soldier.attack_windup + 0.2:
+				_expect(_player.health == _horde_health, "stepping out of reach avoids the swing")
+				_horde_step = 3
+		3:
+			# It walks back into reach; standing still, the next swing lands after its windup.
+			if _horde_enemy._hit_left > 0.0:
+				_horde_mark = _elapsed
+				_horde_step = 4
+		4:
+			if _player.health < _horde_health:
+				print("Horde: the swing landed %.2f s after it started (windup %.2f s)" % [since, soldier.attack_windup])
+				_expect(absf(since - soldier.attack_windup) <= 2.5 / 60.0, "the hit lands after the windup")
+				_horde_enemy.take_damage(1.0e9)
+				Game.spawner.spawn_ring(_player.global_position, 6, 3.0)
+				_horde_ring.assign(Game.enemies.slice(-6))
+				_horde_mark = _elapsed
+				_horde_step = 5
+			elif since > 1.0:
+				_failures.append("The standing character was never hit")
+				_finish("Horde: no hit")
+		5:
+			# Ring spawns climb out of the ground before they move.
+			if since > 0.6:
+				_screenshot("rising")
+				_expect(_horde_ring.size() == 6 and _horde_ring.all(func(enemy: Enemy) -> bool: return enemy._rise_left > 0.0),
+						"ring spawns are rising from the ground")
+				_expect(_horde_ring.all(func(enemy: Enemy) -> bool: return enemy.get_real_velocity().length() < 0.01),
+						"rising enemies don't move")
+				_horde_step = 6
+		6:
+			if since > Enemy.RISE_TIME + 0.4:
+				_expect(_horde_ring.any(func(enemy: Enemy) -> bool: return enemy.get_real_velocity().length() > 1.0),
+						"risen enemies chase the character")
+				var victim := _horde_ring[0]
+				victim.take_damage(1.0e9)
+				_expect(not Game.enemies.has(victim) and victim.visible, "a killed enemy stays as a corpse")
+				_horde_mark = _elapsed
+				_horde_step = 7
+		7:
+			if since > 0.5 and since < 0.6:
+				_screenshot("corpse")
+			var victim := _horde_ring[0]
+			if since > Enemy.CORPSE_TIME + Enemy.SINK_TIME + 0.2:
+				_expect(not victim.visible and victim.process_mode == Node.PROCESS_MODE_DISABLED
+						and Game.spawner._pools[victim.type].has(victim), "the corpse sinks and returns to the pool")
+				print("Horde: a corpse is back in the pool %.1f s after the kill" % since)
+				_expect(_horde_enemy.process_mode == Node.PROCESS_MODE_DISABLED, "the first skeleton's corpse is back in the pool too")
+				_finish("Horde checks done")
+
+
+## Every horde type is drawn as one merged mesh (body and eyes) that also holds its weapons,
+## and its pool was filled up front.
+func _check_horde_models() -> void:
+	for enemy_type in Game.spawner.enemy_types:
+		var mesh: ArrayMesh = enemy_type._mesh
+		_expect(mesh != null and mesh.get_surface_count() == 2, "%s is one merged mesh with body and eyes" % enemy_type.display_name)
+		if mesh == null:
+			continue
+		var model := enemy_type.model.instantiate()
+		var part_vertices := 0
+		for part: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+			for surface in part.mesh.get_surface_count():
+				part_vertices += part.mesh.surface_get_array_len(surface)
+		model.free()
+		var merged_vertices := 0
+		for surface in mesh.get_surface_count():
+			merged_vertices += mesh.surface_get_array_len(surface)
+		_expect(merged_vertices > part_vertices, "%s holds its weapons" % enemy_type.display_name)
+		_expect(Game.spawner._pools[enemy_type].size() >= enemy_type.prewarm_count, "%s pool was built up front" % enemy_type.display_name)
+
+
+## A tough enemy (so it lives through the test) standing at `at`.
+func _spawn_test_enemy(enemy_type: EnemyType, at: Vector3) -> Enemy:
+	Game.spawner._spawn_one(enemy_type, at)
+	var enemy: Enemy = Game.enemies.back()
+	enemy.max_health = 1.0e6
+	enemy.health = enemy.max_health
+	return enemy
+
+
+func _move_player(to: Vector3) -> void:
+	_player.global_position = to
+	_player.reset_physics_interpolation()
 
 
 func _kill_bosses() -> void:

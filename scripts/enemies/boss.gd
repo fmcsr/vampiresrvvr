@@ -25,9 +25,9 @@ var _charge_time_left := 0.0
 var _charge_hit := false
 
 
-func spawn(enemy_type: EnemyType, at: Vector3, health_multiplier: float) -> void:
+func spawn(enemy_type: EnemyType, at: Vector3, health_multiplier: float, rising := false) -> void:
 	boss_type = enemy_type as BossType
-	super(enemy_type, at, health_multiplier)
+	super(enemy_type, at, health_multiplier, rising)
 	_state = State.CHASE
 	_special_timer = boss_type.special_interval
 

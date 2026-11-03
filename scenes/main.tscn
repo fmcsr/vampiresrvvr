@@ -7,9 +7,9 @@
 [ext_resource type="Script" path="res://scripts/enemies/enemy_spawner.gd" id="5_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/enemy.tscn" id="6_enemy"]
 [ext_resource type="Script" path="res://scripts/enemies/enemy_type.gd" id="7_enemy_type"]
-[ext_resource type="Resource" path="res://resources/enemies/skeleton.tres" id="8_skeleton"]
-[ext_resource type="Resource" path="res://resources/enemies/ghoul.tres" id="9_ghoul"]
-[ext_resource type="Resource" path="res://resources/enemies/brute.tres" id="10_brute"]
+[ext_resource type="Resource" path="res://resources/enemies/skeleton_soldier.tres" id="8_skeleton"]
+[ext_resource type="Resource" path="res://resources/enemies/skeleton_rogue.tres" id="9_rogue"]
+[ext_resource type="Resource" path="res://resources/enemies/bone_giant.tres" id="10_giant"]
 [ext_resource type="Script" path="res://scripts/pickups/pickup_manager.gd" id="11_pickups"]
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="12_hud"]
 [ext_resource type="Script" path="res://scripts/ui/level_up_screen.gd" id="13_level_up"]
@@ -65,7 +65,7 @@ fov = 45.0
 [node name="EnemySpawner" type="Node3D" parent="."]
 script = ExtResource("5_spawner")
 enemy_scene = ExtResource("6_enemy")
-enemy_types = Array[ExtResource("7_enemy_type")]([ExtResource("8_skeleton"), ExtResource("9_ghoul"), ExtResource("10_brute")])
+enemy_types = Array[ExtResource("7_enemy_type")]([ExtResource("8_skeleton"), ExtResource("9_rogue"), ExtResource("10_giant")])
 
 [node name="RunDirector" type="Node3D" parent="."]
 script = ExtResource("16_director")

@@ -6,12 +6,16 @@ extends Node3D
 ## --merge      draws each skeleton as one mesh instead of nine parts
 ## --no-shadows the skeletons cast no shadows
 ## --throttle=N each skeleton's animation advances every N frames (staggered)
+## --enemies    the game's own enemies instead of bare models (the three horde types mixed, with
+##              weapons, blob shadows and their animation throttling); also times building them
 ## --lineup     shows the planned cast instead: the Knight, the three adventurer bosses and a
 ##              mixed skeleton horde (add --screenshot=/absolute/file.png to save a picture)
 
 const MODEL := "res://models/kaykit/skeletons/Skeleton_Minion.glb"
+const ENEMY_SCENE := "res://scenes/enemies/enemy.tscn"
+## Horde mix for --enemies and the lineup: enemy type, share of the count.
+const ENEMY_MIX := [["skeleton_soldier", 0.65], ["skeleton_rogue", 0.25], ["bone_giant", 0.1]]
 const ADVENTURERS := "res://models/kaykit/adventurers/"
-const SKELETONS := "res://models/kaykit/skeletons/"
 ## Lineup: model, position, scale, animation, weapon meshes to keep (the rest are hidden).
 const LINEUP := [
 	["Knight", Vector3(0.0, 0.0, 2.0), 1.0, "Idle", ["1H_Sword", "Badge_Shield"]],
@@ -29,6 +33,7 @@ var _merge := false
 var _shadows := true
 var _throttle := 1
 var _lineup := false
+var _enemies := false
 var _screenshot := ""
 var _players: Array[AnimationPlayer] = []
 var _elapsed := 0.0
@@ -53,6 +58,8 @@ func _ready() -> void:
 			_throttle = maxi(int(arg.trim_prefix("--throttle=")), 1)
 		elif arg == "--lineup":
 			_lineup = true
+		elif arg == "--enemies":
+			_enemies = true
 		elif arg.begins_with("--screenshot="):
 			_screenshot = arg.trim_prefix("--screenshot=")
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -60,6 +67,14 @@ func _ready() -> void:
 	_build_stage()
 	if _lineup:
 		_build_lineup()
+		return
+	if _enemies:
+		var start := Time.get_ticks_usec()
+		_spawn_enemies(_count, func(_enemy: Enemy) -> Vector3:
+				var angle := randf() * TAU
+				return Vector3(cos(angle), 0.0, sin(angle)) * sqrt(randf()) * SPREAD_RADIUS)
+		var built_ms := (Time.get_ticks_usec() - start) / 1000.0
+		print("built %d enemies in %.0f ms (%.2f ms each)" % [Game.enemies.size(), built_ms, built_ms / maxi(Game.enemies.size(), 1)])
 		return
 	var scene := load(MODEL) as PackedScene
 	for i in _count:
@@ -88,10 +103,14 @@ func _process(delta: float) -> void:
 		get_tree().quit()
 		return
 	if _elapsed >= WARMUP_SECONDS + MEASURE_SECONDS:
-		print("count=%d merge=%s shadows=%s throttle=%d | frame %.2f ms (p95 %.2f, %d fps) | process %.2f ms | render cpu %.2f gpu %.2f ms | draw calls %d" % [
-				_count, _merge, _shadows, _throttle, _average(_frame_ms), _percentile(_frame_ms, 0.95),
+		var setup := "enemies" if _enemies else "merge=%s shadows=%s throttle=%d" % [_merge, _shadows, _throttle]
+		print("count=%d %s | frame %.2f ms (p95 %.2f, %d fps) | process %.2f ms | render cpu %.2f gpu %.2f ms | draw calls %d" % [
+				_count, setup, _average(_frame_ms), _percentile(_frame_ms, 0.95),
 				roundi(1000.0 / _average(_frame_ms)), _average(_process_ms), _average(_render_cpu_ms),
 				_average(_render_gpu_ms), _draw_calls])
+		if _screenshot != "":
+			get_viewport().get_texture().get_image().save_png(_screenshot)
+			print("saved %s" % _screenshot)
 		get_tree().quit()
 
 
@@ -186,17 +205,25 @@ func _build_lineup() -> void:
 		model.scale = Vector3.ONE * float(entry[2])
 		ModelTools.keep_props(model, entry[4])
 		_play_looped(model.get_node("AnimationPlayer") as AnimationPlayer, entry[3])
-	var horde := [["Skeleton_Minion", 1.0, 26], ["Skeleton_Rogue", 0.9, 10], ["Skeleton_Warrior", 1.6, 4]]
-	for kind: Array in horde:
-		var scene := load(SKELETONS + kind[0] + ".glb") as PackedScene
-		for i in int(kind[2]):
-			var model := scene.instantiate() as Node3D
-			add_child(model)
+	# The horde comes at the Knight from the front.
+	_spawn_enemies(40, func(enemy: Enemy) -> Vector3:
 			var angle := randf_range(0.15, 0.85) * PI
-			model.position = Vector3(cos(angle) * randf_range(4.0, 11.0), 0.0, sin(angle) * randf_range(4.0, 7.0) + 1.0)
-			model.scale = Vector3.ONE * float(kind[1])
-			model.look_at(Vector3(0.0, 0.0, 2.0) + (model.global_position - Vector3(0.0, 0.0, 2.0)) * 2.0, Vector3.UP)
-			_play_looped(model.get_node("AnimationPlayer") as AnimationPlayer, "Walking_D_Skeletons")
+			var at := Vector3(cos(angle) * randf_range(4.0, 11.0), 0.0, sin(angle) * randf_range(4.0, 7.0) + 1.0)
+			enemy.look_at_from_position(at, Vector3(0.0, 0.0, 2.0), Vector3.UP)
+			return at)
+
+
+## Spawns count enemies of the horde mix; place(enemy) returns where each one stands. They
+## stand still (there's no player to chase) and play their walk cycle.
+func _spawn_enemies(count: int, place: Callable) -> void:
+	var scene := load(ENEMY_SCENE) as PackedScene
+	for entry: Array in ENEMY_MIX:
+		var type := load("res://resources/enemies/%s.tres" % entry[0]) as EnemyType
+		for i in roundi(count * float(entry[1])):
+			var enemy := scene.instantiate() as Enemy
+			add_child(enemy)
+			var at: Vector3 = place.call(enemy)
+			enemy.spawn(type, at, 1.0)
 
 
 static func _play_looped(player: AnimationPlayer, animation: String) -> void:

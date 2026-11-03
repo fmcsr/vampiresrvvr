@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyType" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_type.gd" id="1_type"]
+[ext_resource type="PackedScene" path="res://models/kaykit/skeletons/Skeleton_Rogue.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://models/kaykit/skeletons/weapons/Skeleton_Blade.gltf" id="3_blade"]
+
+[resource]
+script = ExtResource("1_type")
+display_name = "Skeleton Rogue"
+color = Color(0.6, 0.18, 0.22, 1)
+size = 0.85
+max_health = 11.0
+move_speed = 5.4
+contact_damage = 4.0
+attack_interval = 0.7
+attack_windup = 0.3
+knockback_resistance = 0.0
+xp_value = 1
+unlock_time = 60.0
+spawn_weight = 0.6
+prewarm_count = 60
+model = ExtResource("2_model")
+right_hand = ExtResource("3_blade")
+left_hand = ExtResource("3_blade")
+walk_animation = &"Running_C"
+walk_cycle_speed = 3.6
+attack_animation = &"Dualwield_Melee_Attack_Slice"
+attack_hit_time = 0.6

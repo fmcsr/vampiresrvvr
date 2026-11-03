@@ -2,7 +2,7 @@
 
 A survivors-like with a Diablo-style camera and an extraction twist: fight through swarms with a sword and four active powers, kill the bosses, then make it out alive with your loot — or lose it.
 
-> **Status:** early prototype (v0.5 in progress: sound, game feel and the Knight hero done; enemies, bosses and lighting next) · built with **Godot 4.7** · art in progress · working title
+> **Status:** early prototype (v0.5 in progress: sound, game feel, the Knight hero and the skeleton horde done; bosses and lighting next) · built with **Godot 4.7** · art in progress · working title
 
 ![Escaping after the final boss: the gate is closing, the compass points to the exit](docs/screenshots/gameplay.png)
 
@@ -25,6 +25,7 @@ A survivors-like with a Diablo-style camera and an extraction twist: fight throu
 - **Meta progression:** character level (XP is kept only when you escape), randomly rolled gear with rarities and affixes, a free basic kit so a wipe never leaves you empty-handed, a shop, a branching core tree, and a save file
 - **Hades-style boons** on every level-up, including a mastery boon for each power in your loadout
 - **Animated hero:** the KayKit Knight runs and strafes in any direction while facing the mouse, swings its sword with the upper body while the legs keep running, and has an animation for every power
+- **Skeleton horde:** armed KayKit skeletons (soldiers, fast rogues, giants) whose swings land after a short windup, so you can step out of them; siege waves and boss summons climb out of the ground, and the dead collapse into bone piles that sink away. Each skeleton is drawn as one mesh with a blob shadow, and off-screen ones don't animate, so hundreds stay cheap
 - **Sound and game feel:** CC0 sound effects and music (camp, run, boss), damage numbers on every hit, particle bursts, hit-stop on big impacts, red screen edges and a heartbeat at low health; volumes, damage numbers and screen shake can be changed in Settings
 
 ## Controls
@@ -64,8 +65,9 @@ godot --headless --path . --fixed-fps 60 res://tests/smoke_test.tscn -- --no-sav
 | `boss_view` | all three bosses and their attacks |
 | `hub` | shop, gear, the free basic kit, core tree, skill tree rules, saving, migrating older saves |
 | `powers --set=A`…`F` | six loadouts that together run all 20 options of the 10 powers |
+| `horde` | skeleton models and pools, stepping out of a swing, the hit landing after its windup, rising from the ground, corpses returning to the pool |
 
-`tests/perf_test.tscn` is a separate benchmark: it walks hundreds of animated skeletons under the game's camera and lighting and prints frame and render times (run it windowed; see the script for options).
+`tests/perf_test.tscn` is a separate benchmark: it shows hundreds of animated skeletons (bare models, or the game's own enemies with `--enemies`) under the game's camera and lighting and prints frame and render times (run it windowed; see the script for options).
 
 A failing scenario exits with code 1. Drop `--headless` and add `--screenshots=/absolute/path` to save screenshots (add `--real-health` for a normal health bar).
 
@@ -104,6 +106,6 @@ See [GDD.md](GDD.md) for the full design.
 
 ## Credits
 
-Character models and animations: [KayKit Character Pack: Adventurers](https://kaylousberg.itch.io/kaykit-adventurers) and [Skeletons](https://kaylousberg.itch.io/kaykit-skeletons) by Kay Lousberg, CC0 (the 1.0 releases from [github.com/KayKit-Game-Assets](https://github.com/KayKit-Game-Assets)).
+Character models, weapons and animations: [KayKit Character Pack: Adventurers](https://kaylousberg.itch.io/kaykit-adventurers) and [Skeletons](https://kaylousberg.itch.io/kaykit-skeletons) by Kay Lousberg, CC0 (the 1.0 releases from [github.com/KayKit-Game-Assets](https://github.com/KayKit-Game-Assets)).
 
 Sound effects and music are CC0 releases from OpenGameArt (Kenney, artisticdude, rubberduck, qubodup, yd, Juhani Junkala); a few sounds are synthesized by `tools/synth_sfx.py`. See [audio/CREDITS.md](audio/CREDITS.md) for every file and its source.

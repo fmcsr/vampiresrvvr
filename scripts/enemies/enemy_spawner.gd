@@ -1,13 +1,12 @@
 class_name EnemySpawner
 extends Node3D
 ## Spawns enemies where the camera can't see them. Spawn rate and enemy health rise as time
-## goes on; every minute a siege wave surrounds the player.
+## goes on; every minute a siege wave climbs out of the ground around the player. Keeps a pool
+## of enemies per type, since each one is built with its type's model.
 
 @export var enemy_scene: PackedScene
 ## The first type is used for siege waves and boss summons.
 @export var enemy_types: Array[EnemyType] = []
-## Number of enemies created up front (prevents hitches in the first minutes).
-@export var prewarm_count := 120
 
 @export_group("Arena")
 @export var arena_half_size := 58.0
@@ -34,7 +33,8 @@ extends Node3D
 ## Spawn rate multiplier; RunDirector raises it during the final escape.
 var intensity := 1.0
 
-var _pool: Array[Enemy] = []
+## EnemyType -> pooled enemies built for it
+var _pools: Dictionary[EnemyType, Array] = {}
 var _spawn_budget := 0.0
 var _next_wave_time := 0.0
 var _relocate_timer := 0.0
@@ -44,8 +44,10 @@ var _point_query := PhysicsPointQueryParameters3D.new()
 func _ready() -> void:
 	_next_wave_time = wave_interval
 	_point_query.collision_mask = 1
-	for i in prewarm_count:
-		_pool.append(_create_enemy())
+	for enemy_type in enemy_types:
+		var pool := _pool_for(enemy_type)
+		for i in enemy_type.prewarm_count:
+			pool.append(_create_enemy(enemy_type))
 
 
 func _physics_process(delta: float) -> void:
@@ -70,7 +72,7 @@ func _physics_process(delta: float) -> void:
 		_relocate_stragglers(player.global_position)
 
 
-## Spawns enemies in a ring around center (siege wave, boss summon).
+## Spawns enemies in a ring around center (siege wave, boss summon); they climb out of the ground.
 func spawn_ring(center: Vector3, count: int, radius: float, enemy_type: EnemyType = null) -> void:
 	var ring_type := enemy_type if enemy_type else enemy_types[0]
 	var limit := arena_half_size - 1.5
@@ -80,7 +82,7 @@ func spawn_ring(center: Vector3, count: int, radius: float, enemy_type: EnemyTyp
 		var angle := TAU * i / count
 		var point := center + Vector3(cos(angle), 0.0, sin(angle)) * radius
 		if absf(point.x) < limit and absf(point.z) < limit and is_point_free(point):
-			_spawn_one(ring_type, point)
+			_spawn_one(ring_type, point, true)
 
 
 ## Looks for an unobstructed point around the player, outside the camera's view.
@@ -110,19 +112,27 @@ func is_point_free(point: Vector3) -> bool:
 	return get_world_3d().direct_space_state.intersect_point(_point_query, 1).is_empty()
 
 
-func _spawn_one(enemy_type: EnemyType, at: Vector3) -> void:
-	var enemy: Enemy = _pool.pop_back() if not _pool.is_empty() else _create_enemy()
-	enemy.spawn(enemy_type, at, 1.0 + health_growth_per_minute * Game.run_time / 60.0)
+func _spawn_one(enemy_type: EnemyType, at: Vector3, rising := false) -> void:
+	var pool := _pool_for(enemy_type)
+	var enemy: Enemy = pool.pop_back() if not pool.is_empty() else _create_enemy(enemy_type)
+	enemy.spawn(enemy_type, at, 1.0 + health_growth_per_minute * Game.run_time / 60.0, rising)
 
 
-func _create_enemy() -> Enemy:
+func _create_enemy(enemy_type: EnemyType) -> Enemy:
 	var enemy := enemy_scene.instantiate() as Enemy
 	enemy.process_mode = Node.PROCESS_MODE_DISABLED
 	enemy.visible = false
 	enemy.died.connect(_on_enemy_died)
 	enemy.returned_to_pool.connect(_on_enemy_returned)
 	add_child(enemy)
+	enemy.prepare(enemy_type)
 	return enemy
+
+
+func _pool_for(enemy_type: EnemyType) -> Array:
+	if not _pools.has(enemy_type):
+		_pools[enemy_type] = []
+	return _pools[enemy_type]
 
 
 func _pick_type() -> EnemyType:
@@ -153,4 +163,4 @@ func _on_enemy_died(enemy: Enemy) -> void:
 
 
 func _on_enemy_returned(enemy: Enemy) -> void:
-	_pool.append(enemy)
+	_pool_for(enemy.type).append(enemy)

@@ -1,6 +1,6 @@
 # Game Design Document (GDD) — Working Title: *vampiresrvvr*
 
-> Version 0.8 · 3 November 2026 · Status: prototype v0.4 playable; v0.5 in progress (sound and game feel done, the Knight hero in)
+> Version 0.9 · 3 November 2026 · Status: prototype v0.4 playable; v0.5 in progress (sound and game feel done, the Knight hero and the skeleton horde in)
 
 ## 1. Concept
 
@@ -110,6 +110,7 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - **Movement:** WASD; the character faces the mouse.
 - **Sword Swing (automatic, melee):** Sweeps a quarter circle (90°) toward the nearest enemy within reach (3 m); everyone in the arc is hit and pushed back slightly. 14 damage every 0.55 s. There are no projectiles.
 - **Active powers:** 4 of the 10 powers in the skill tree are slotted.
+- **Enemy attacks:** an enemy in reach starts a swing and holds still; the hit lands after a short windup (0.3 s for the Skeleton Rogue, 0.35 s for the Soldier, 0.5 s for the Bone Giant) and only if you are still in reach, so stepping away avoids it.
 
 | Tier | Power | Cooldown | Enhanced | Option A | Option B |
 |---|---|---|---|---|---|
@@ -192,7 +193,8 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 **Step 2, art (in progress)**
 - [x] Benchmark: 300 animated KayKit skeletons cost about 1.5 ms when each is merged into one mesh and casts no shadow (10 ms as nine shadowed parts); `tests/perf_test.tscn`
 - [x] The Knight as the hero: blended running and strafing while facing the mouse, upper-body sword swings that turn to the enemy hit, an animation for every power, a flinch on big hits, a death fall
-- [ ] Skeleton horde: Skeleton Minion (soldier), Skeleton Rogue (the fast enemy, replaces the Ghoul), an enlarged Skeleton Warrior (Bone Giant); merged meshes, blob shadows
+- [x] Skeleton horde: the Skeleton Minion as the Soldier (sword and small shield), the Skeleton Rogue as the fast enemy replacing the Ghoul (two blades), the Skeleton Warrior enlarged 1.6× as the Bone Giant (axe and large shield, the only one with a real shadow). Each skeleton and its weapons are merged into one mesh with glowing eyes and a blob shadow; off-screen skeletons don't animate, and above 100 enemies each animates every other frame
+- [x] Enemy swings land after a windup and can be stepped out of; siege waves and boss summons climb out of the ground (1.2 s, hittable, can't attack); the dead collapse into bone piles that sink away after 1.3 s
 - [ ] Adventurer bosses, enlarged: the Rogue (minute 5, with a new telegraphed arrow volley), the Barbarian (minute 10), the Mage as the necromancer Bone King (minute 15)
 - [ ] A "corrupted" look for the bosses (darker colors, glowing eyes, an aura), toon shader and outline
 - [ ] Environment (dungeon pieces, torches) and lighting
@@ -210,10 +212,11 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 
 **Test shortcut:** Shift+T fast-forwards time by 1 minute (only in editor/debug runs). Press it 4–5 times to try out the bosses and gates.
 
-**Enemies:** Skeleton Soldier (from the start), Ghoul (minute 1, fast), Bone Giant (minute 2.5, tank). Every minute, a siege wave ("Surrounded!") closes in around the player.
+**Enemies:** Skeleton Soldier (from the start), Skeleton Rogue (minute 1, fast), Bone Giant (minute 2.5, tank). Every minute, a siege wave ("Surrounded!") climbs out of the ground around the player.
 
 **Where to tune balance:**
-- Enemy types: `resources/enemies/*.tres` (edited in the Inspector)
+- Enemy types: `resources/enemies/*.tres` (edited in the Inspector), including swing windup, model, weapons, animations and pool size
+- Rising, corpse and sink times, blob shadow size, when animations start skipping frames: constants at the top of `scripts/enemies/enemy.gd`
 - Bosses: `resources/bosses/*.tres` (health, speed, attack values, gold reward)
 - Boss timings, countdown, gate distances, intensity during the escape: `RunDirector` node in the Main scene
 - Time to stand in the gate: `scripts/run/exit_portal.gd` → `channel_time`
