@@ -93,6 +93,12 @@ func _slot_card(slot: String) -> Control:
 		var empty := UiKit.label("Empty", 17, DIM_COLOR)
 		empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(empty)
+		if not Profile.has_free_basic(slot):
+			var take := UiKit.button("Take %s (free)" % ItemGenerator.BASIC_TITLES[slot], Color(0.5, 0.9, 0.65), 14)
+			take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			take.pressed.connect(Profile.take_free_basic.bind(slot))
+			take.pressed.connect(func() -> void: Audio.play("equip"))
+			row.add_child(take)
 	return panel
 
 
@@ -113,6 +119,9 @@ func _stash_row(item: Item) -> Control:
 	equip.pressed.connect(Profile.equip.bind(item))
 	equip.pressed.connect(func() -> void: Audio.play("equip"))
 	buttons.add_child(equip)
+	if item.free:
+		buttons.add_child(UiKit.label("Free kit: can't be sold", 13, DIM_COLOR))
+		return panel
 	var sell := UiKit.button("Sell  +%d" % item.sell_price(), GOLD_COLOR, 15)
 	sell.pressed.connect(Profile.sell.bind(item))
 	sell.pressed.connect(func() -> void: Audio.play("gold"))

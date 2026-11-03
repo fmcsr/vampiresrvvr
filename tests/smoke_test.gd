@@ -278,6 +278,8 @@ func _on_run_over() -> void:
 			_expect(not success and reason == "You died", "death result")
 			_expect(Profile.equipped.is_empty() and Profile.failures == 1, "dying loses the equipped gear")
 			_expect(Profile.gold == start_gold and Profile.cores == 0, "dying adds no gold or cores")
+			_expect(Profile.take_free_basic("weapon") and (Profile.equipped.get("weapon") as Item).free,
+					"the free basic kit can be taken again after dying")
 			_finish_and_return_to_hub()
 			return
 		"early_exit":
@@ -315,6 +317,9 @@ func _finish_and_return_to_hub() -> void:
 
 func _start_hub_scenario() -> void:
 	Profile.reset()
+	_expect(Profile.equipped.size() == STARTING_EQUIPMENT and Profile.equipped.values().all(func(item: Item) -> bool: return item.free),
+			"a new profile starts with the free basic kit")
+	_expect(not Profile.take_free_basic("weapon"), "only one free basic item per slot")
 	Profile.gold = 2000
 	Profile.cores = 12
 	var stash_before := Profile.stash.size()
@@ -324,6 +329,10 @@ func _start_hub_scenario() -> void:
 	_expect(Profile.stash.size() == stash_before + 2 and Profile.shop_stock.size() == 2, "bought items in the stash, ware left the stock")
 	Profile.equip(stocked)
 	_expect(Profile.equipped.get(stocked.slot) == stocked and not Profile.stash.has(stocked), "equipping")
+	var kit_item: Item = Profile.stash.filter(func(item: Item) -> bool: return item.free)[0]
+	var gold_with_kit := Profile.gold
+	Profile.sell(kit_item)
+	_expect(Profile.gold == gold_with_kit and Profile.stash.has(kit_item) and kit_item.sell_price() == 0, "free kit items can't be sold")
 	var gold_before := Profile.gold
 	Profile.sell(basic)
 	_expect(Profile.gold == gold_before + basic.sell_price() and not Profile.stash.has(basic), "selling")
@@ -337,6 +346,10 @@ func _start_hub_scenario() -> void:
 	var summary := Profile.apply_run_result({"success": false, "reason": "Run abandoned"})
 	_expect(Profile.equipped.is_empty() and (summary["lost_equipment"] as Array).size() == STARTING_EQUIPMENT
 			and not Profile.run_in_progress, "an abandoned run loses the equipped gear")
+	var other_slot := "armor" if stocked.slot != "armor" else "weapon"
+	_expect(Profile.take_free_basic(other_slot) and (Profile.equipped.get(other_slot) as Item).free,
+			"after a loss a free basic item is equipped right away")
+	_expect(not Profile.take_free_basic(stocked.slot), "a free kit item in the stash still counts")
 	_check_skill_tree()
 
 	# A filled profile for the screenshots.
@@ -346,6 +359,11 @@ func _start_hub_scenario() -> void:
 	for rarity in [Item.Rarity.LEGENDARY, Item.Rarity.RARE, Item.Rarity.RARE, Item.Rarity.MAGIC, Item.Rarity.MAGIC]:
 		Profile.stash.append(ItemGenerator.roll(rarity))
 	Profile.equip(Profile.stash[0])
+	# One empty slot, so the screenshots show the free basic kit offer.
+	for slot in Item.SLOTS:
+		if (Profile.equipped.get(slot) as Item).free:
+			Profile.equipped.erase(slot)
+			break
 	Profile.unlocked.assign(["a1", "a3", "b1", "c1"])
 	Profile.add_char_xp(400 + 500 + 600 + 700)
 	Profile.add_skill_rank("fire_wave")

@@ -103,7 +103,8 @@ static func item_card(item: Item) -> VBoxContainer:
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 2)
 	box.add_child(label(item.title, 18, item.color()))
-	box.add_child(label("%s %s" % [item.rarity_name(), item.slot_name().to_lower()], 13, Color(1.0, 1.0, 1.0, 0.5)))
+	var kind := "%s %s" % [item.rarity_name(), item.slot_name().to_lower()]
+	box.add_child(label(kind + ("  ·  free kit" if item.free else ""), 13, Color(1.0, 1.0, 1.0, 0.5)))
 	for line in item.describe_affixes():
 		box.add_child(label(line, 15, Color(0.86, 0.85, 0.8)))
 	return box

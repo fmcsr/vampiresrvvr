@@ -27,8 +27,10 @@ func _ready() -> void:
 	Profile.changed.connect(_refresh, CONNECT_DEFERRED)
 	show_tab(0)
 	if not Profile.abandoned_summary.is_empty():
-		var lost: Array = Profile.abandoned_summary.get("lost_equipment", [])
+		var lost := _valuable(Profile.abandoned_summary.get("lost_equipment", []))
 		_notice.text = "Your last run was abandoned: %s lost." % UiKit.count_text(lost.size(), "equipped item was", "equipped items were")
+		if lost.is_empty():
+			_notice.text = "Your last run was abandoned; only free basic gear was lost."
 		_notice.show()
 		Profile.abandoned_summary = {}
 
@@ -48,13 +50,20 @@ func _refresh() -> void:
 			Profile.char_level, Profile.runs, Profile.extractions, Profile.failures]
 	if Profile.skill_points_free() > 0:
 		_record_label.text += "  ·  %s unspent" % UiKit.count_text(Profile.skill_points_free(), "skill point", "skill points")
-	var at_risk := Profile.equipped.size()
+	var at_risk := _valuable(Profile.equipped.values()).size()
 	if at_risk > 0:
 		_warning.text = "Your %s at risk: fail to escape and you lose %s." % [
 				UiKit.count_text(at_risk, "equipped item is", "equipped items are"), "it" if at_risk == 1 else "them"]
+	elif not Profile.equipped.is_empty():
+		_warning.text = "Only free basic gear equipped: nothing of value is at risk."
 	else:
-		_warning.text = "You're going in without gear. Basic items are available in the Shop."
+		_warning.text = "You're going in without gear. Take the free basic kit in the Shop or the Equipment tab."
 	_panels[_current_tab].refresh()
+
+
+## Items that cost something; the free basic kit is not a real loss.
+static func _valuable(items: Array) -> Array:
+	return items.filter(func(item: Item) -> bool: return not item.free)
 
 
 func _start_run() -> void:
