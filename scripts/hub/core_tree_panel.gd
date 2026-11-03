@@ -216,4 +216,4 @@ func _select(node_id: String) -> void:
 
 
 func _on_unlock_pressed() -> void:
-	Profile.unlock_node(_selected)
+	Audio.play("core" if Profile.unlock_node(_selected) else "ui_error")

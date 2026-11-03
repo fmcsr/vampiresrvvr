@@ -25,3 +25,5 @@ summon_count = 0
 gold_reward = 200
 core_reward = 1
 is_final = false
+death_burst = &"gore"
+death_color = Color(0.55, 0.08, 0.06, 1)

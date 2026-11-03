@@ -47,6 +47,7 @@ func _choose(index: int) -> void:
 	if _lock_time > 0.0 or index >= _choices.size():
 		return
 	_lock_time = INPUT_LOCK_TIME
+	Audio.play("boon")
 	# The pressed card may be freed by this signal, so the choice is emitted at the end of the frame.
 	boon_chosen.emit.call_deferred(_choices[index])
 
@@ -90,6 +91,7 @@ func _make_card(index: int, boon_id: String, player: Player) -> Button:
 	card.add_theme_stylebox_override("hover", UiKit.flat_style(Color(0.11, 0.09, 0.13, 0.98), accent, 4, 12))
 	card.add_theme_stylebox_override("pressed", UiKit.flat_style(Color(0.14, 0.11, 0.16, 1.0), accent, 4, 12))
 	card.pressed.connect(_choose.bind(index))
+	card.mouse_entered.connect(Audio.play.bind("ui_hover"))
 
 	var margin := MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -64,14 +64,14 @@ func load_profile() -> void:
 		abandoned_summary = apply_run_result({"success": false, "reason": "Run abandoned"})
 
 
-## A new profile: starter gear equipped, the four starter powers and a little gold.
+## A new profile: the free basic kit equipped, the four starter powers and a little gold.
 func reset() -> void:
 	gold = STARTING_GOLD
 	cores = 0
 	stash.clear()
 	equipped.clear()
 	for slot in Item.SLOTS:
-		equipped[slot] = ItemGenerator.basic(slot)
+		equipped[slot] = ItemGenerator.free_basic(slot)
 	unlocked.clear()
 	shop_stock = ItemGenerator.roll_shop_stock(SHOP_STOCK_SIZE)
 	runs = 0
@@ -103,7 +103,7 @@ func unequip(slot: String) -> void:
 	_commit()
 
 
-## Shop wares leave the stock; basic items are unlimited. The item goes to the stash.
+## Shop wares leave the stock; the item goes to the stash.
 func buy(item: Item) -> bool:
 	if gold < item.price():
 		return false
@@ -115,11 +115,33 @@ func buy(item: Item) -> bool:
 
 
 func sell(item: Item) -> void:
-	if not stash.has(item):
+	if not stash.has(item) or item.free:
 		return
 	stash.erase(item)
 	gold += item.sell_price()
 	_commit()
+
+
+## True if a free basic item for this slot is equipped or in the stash.
+func has_free_basic(slot: String) -> bool:
+	for item in stash + equipped.values():
+		if item.free and item.slot == slot:
+			return true
+	return false
+
+
+## The free basic kit: one free basic item per slot, so a player who lost everything is never
+## left empty-handed. It is equipped right away if the slot is empty, otherwise it goes to the stash.
+func take_free_basic(slot: String) -> bool:
+	if has_free_basic(slot):
+		return false
+	var item := ItemGenerator.free_basic(slot)
+	if equipped.has(slot):
+		stash.append(item)
+	else:
+		equipped[slot] = item
+	_commit()
+	return true
 
 
 func unlock_node(node_id: String) -> bool:

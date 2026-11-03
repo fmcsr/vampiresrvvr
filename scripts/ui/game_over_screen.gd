@@ -70,11 +70,15 @@ func open(summary: Dictionary, run_time: float, level: int, kills: int) -> void:
 			_line("Cores: %d lost" % run_cores, LOST_COLOR)
 		if not items.is_empty():
 			_line("%s lost" % UiKit.count_text(items.size(), "found item", "found items"), LOST_COLOR)
-		if lost_equipment.is_empty():
-			_line("You went in without gear; nothing was lost", DIM_COLOR)
-		else:
+		# The free basic kit is not a real loss; it can be taken again in the camp.
+		var valuable := lost_equipment.filter(func(item: Item) -> bool: return not item.free)
+		if not valuable.is_empty():
 			_line("Lost equipment:", FAIL_COLOR)
-			_item_lines(lost_equipment)
+			_item_lines(valuable)
+		elif not lost_equipment.is_empty():
+			_line("Only free basic gear was lost; take a new set in the camp", DIM_COLOR)
+		else:
+			_line("You went in without gear; nothing was lost", DIM_COLOR)
 	_lock_time = INPUT_LOCK_TIME
 	show()
 

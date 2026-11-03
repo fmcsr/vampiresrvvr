@@ -27,6 +27,11 @@ func _ready() -> void:
 	Game.pickups = $Pickups
 	Game.spawner = $EnemySpawner
 	Game.director = director
+	Game.particles = ParticleBursts.new()
+	add_child(Game.particles)
+	Game.damage_numbers = DamageNumbers.new()
+	add_child(Game.damage_numbers)
+	Audio.play_music("run")
 	hud.setup(player)
 	pause_screen.setup(player)
 	player.leveled_up.connect(_on_player_leveled_up)
@@ -90,6 +95,7 @@ func _on_run_ended(result: Dictionary) -> void:
 	_pending_level_ups = 0
 	level_up_screen.close()
 	pause_screen.hide()
+	Audio.stop_loops()
 	var summary := Profile.apply_run_result(result)
 	game_over_screen.open(summary, Game.run_time, player.level, Game.kills)
 	_refresh_pause()
@@ -100,11 +106,13 @@ func _on_pause_toggle_requested() -> void:
 		return
 	_paused_by_player = not _paused_by_player
 	pause_screen.visible = _paused_by_player
+	Audio.play("ui_open" if _paused_by_player else "ui_close")
 	_refresh_pause()
 
 
 func _on_continue_requested() -> void:
 	get_tree().paused = false
+	Engine.time_scale = 1.0
 	get_tree().change_scene_to_file(HUB_SCENE)
 
 

@@ -9,6 +9,21 @@ const CORE_COLOR := Color(0.45, 1.0, 0.7)
 const ALERT_COLOR := Color(1.0, 0.3, 0.25)
 ## Distance of the compass arrow from the character (pixels).
 const COMPASS_DISTANCE := 90.0
+## Below this share of health the screen edges pulse red and a heartbeat plays.
+const LOW_HEALTH := 0.3
+## Length of the heartbeat loop (s); the red pulse follows it.
+const HEARTBEAT_PERIOD := 0.95
+const HURT_FADE_PER_SECOND := 2.5
+const VIGNETTE_SHADER := "
+shader_type canvas_item;
+uniform vec4 tint : source_color = vec4(0.7, 0.02, 0.02, 1.0);
+uniform float strength = 0.0;
+void fragment() {
+	vec2 p = UV * 2.0 - 1.0;
+	float edge = smoothstep(0.45, 1.35, length(p * vec2(1.0, 0.8)));
+	COLOR = vec4(tint.rgb, edge * strength);
+}
+"
 
 
 class Slot:
@@ -55,12 +70,17 @@ var _compass: CompassArrow
 var _compass_label: Label
 var _announcement: Label
 var _announcement_tween: Tween
+## Red screen edges; strength is the larger of the hit flash and the low-health pulse.
+var _vignette: ColorRect
+var _hurt_flash := 0.0
+var _pulse_time := 0.0
 
 
 func setup(player: Player) -> void:
 	_player = player
 	_build()
 	player.health_changed.connect(_on_health_changed)
+	player.damaged.connect(_on_player_damaged)
 	player.shield_changed.connect(func(_amount: float) -> void: _refresh_health())
 	player.xp_changed.connect(_on_xp_changed)
 	Game.announced.connect(_on_announced)
@@ -70,9 +90,10 @@ func setup(player: Player) -> void:
 	_on_loot_changed()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _player == null:
 		return
+	_update_danger(delta)
 	_time_label.text = UiKit.format_time(Game.run_time)
 	_kills_label.text = "Kills: %d" % Game.kills
 	for slot in _slots:
@@ -84,6 +105,23 @@ func _process(_delta: float) -> void:
 		_update_boss_bar(director)
 		_update_escape(director)
 		_update_compass(director)
+
+
+## Red screen edges: a flash on every hit, and a pulse with a heartbeat while health is low.
+func _update_danger(delta: float) -> void:
+	_hurt_flash = maxf(_hurt_flash - delta * HURT_FADE_PER_SECOND, 0.0)
+	var ratio := _player.health / maxf(_player.max_health, 1.0)
+	var low := ratio < LOW_HEALTH and _player.health > 0.0
+	var pulse := 0.0
+	var severity := 0.0
+	if low:
+		_pulse_time += delta
+		severity = 1.0 - ratio / LOW_HEALTH
+		pulse = (0.25 + 0.35 * severity) * (0.5 + 0.5 * cos(TAU * _pulse_time / HEARTBEAT_PERIOD))
+	else:
+		_pulse_time = 0.0
+	(_vignette.material as ShaderMaterial).set_shader_parameter("strength", maxf(_hurt_flash, pulse))
+	Audio.set_loop("heartbeat", "heartbeat", low, 1.0, -6.0 + 6.0 * severity)
 
 
 func _update_boss_bar(director: RunDirector) -> void:
@@ -139,7 +177,17 @@ func _build() -> void:
 	UiKit.place(root, Vector4(0, 0, 1, 1), Vector4.ZERO)
 	add_child(root)
 
-	_xp_bar = UiKit.bar(Color(0.55, 0.4, 1.0), Color(0.05, 0.04, 0.08, 0.85))
+	_vignette = ColorRect.new()
+	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shader := Shader.new()
+	shader.code = VIGNETTE_SHADER
+	var vignette_material := ShaderMaterial.new()
+	vignette_material.shader = shader
+	_vignette.material = vignette_material
+	UiKit.place(_vignette, Vector4(0, 0, 1, 1), Vector4.ZERO)
+	root.add_child(_vignette)
+
+	_xp_bar =UiKit.bar(Color(0.55, 0.4, 1.0), Color(0.05, 0.04, 0.08, 0.85))
 	UiKit.place(_xp_bar, Vector4(0, 0, 1, 0), Vector4(0, 0, 0, 12))
 	root.add_child(_xp_bar)
 
@@ -308,6 +356,10 @@ func _make_slot(ability: Ability, action: String) -> Control:
 
 func _on_health_changed(_current: float, _maximum: float) -> void:
 	_refresh_health()
+
+
+func _on_player_damaged(amount: float) -> void:
+	_hurt_flash = clampf(0.25 + 2.0 * amount / maxf(_player.max_health, 1.0), _hurt_flash, 0.6)
 
 
 func _refresh_health() -> void:

@@ -28,5 +28,8 @@ func activate() -> void:
 	for enemy in Game.enemies_in_radius(center, final_radius):
 		# Freeze first so Shatter also applies to this hit.
 		enemy.freeze(freeze_duration)
-		enemy.take_damage(hit_damage)
+		enemy.take_damage(hit_damage, Vector3.ZERO, true, color)
 	Fx.ring(center, final_radius, color)
+	Fx.burst(&"shards", center + Vector3.UP * 0.6, color)
+	Fx.burst(&"dust", center, Color(color, 0.45), 0.8)
+	Audio.play("frost_nova")

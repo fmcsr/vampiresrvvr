@@ -2,7 +2,7 @@ extends Control
 ## Camp (base) screen between runs: equipment, skills, shop and core tree. Runs start from here.
 
 const RUN_SCENE := "res://scenes/main.tscn"
-const TAB_NAMES: Array[String] = ["Equipment", "Skills", "Shop", "Core Tree"]
+const TAB_NAMES: Array[String] = ["Equipment", "Skills", "Shop", "Core Tree", "Settings"]
 const ACCENT := Color(0.85, 0.7, 1.0)
 const GOLD_COLOR := Color(1.0, 0.8, 0.3)
 const CORE_COLOR := Color(0.45, 1.0, 0.7)
@@ -18,13 +18,19 @@ var _current_tab := 0
 
 
 func _ready() -> void:
+	# Nothing from the run (slow motion, gate hum, heartbeat) carries over into the camp.
+	Engine.time_scale = 1.0
+	Audio.stop_loops()
+	Audio.play_music("camp")
 	_build()
 	# Deferred so the UI isn't rebuilt from inside a button's own signal.
 	Profile.changed.connect(_refresh, CONNECT_DEFERRED)
 	show_tab(0)
 	if not Profile.abandoned_summary.is_empty():
-		var lost: Array = Profile.abandoned_summary.get("lost_equipment", [])
+		var lost := _valuable(Profile.abandoned_summary.get("lost_equipment", []))
 		_notice.text = "Your last run was abandoned: %s lost." % UiKit.count_text(lost.size(), "equipped item was", "equipped items were")
+		if lost.is_empty():
+			_notice.text = "Your last run was abandoned; only free basic gear was lost."
 		_notice.show()
 		Profile.abandoned_summary = {}
 
@@ -44,16 +50,24 @@ func _refresh() -> void:
 			Profile.char_level, Profile.runs, Profile.extractions, Profile.failures]
 	if Profile.skill_points_free() > 0:
 		_record_label.text += "  ·  %s unspent" % UiKit.count_text(Profile.skill_points_free(), "skill point", "skill points")
-	var at_risk := Profile.equipped.size()
+	var at_risk := _valuable(Profile.equipped.values()).size()
 	if at_risk > 0:
 		_warning.text = "Your %s at risk: fail to escape and you lose %s." % [
 				UiKit.count_text(at_risk, "equipped item is", "equipped items are"), "it" if at_risk == 1 else "them"]
+	elif not Profile.equipped.is_empty():
+		_warning.text = "Only free basic gear equipped: nothing of value is at risk."
 	else:
-		_warning.text = "You're going in without gear. Basic items are available in the Shop."
+		_warning.text = "You're going in without gear. Take the free basic kit in the Shop or the Equipment tab."
 	_panels[_current_tab].refresh()
 
 
+## Items that cost something; the free basic kit is not a real loss.
+static func _valuable(items: Array) -> Array:
+	return items.filter(func(item: Item) -> bool: return not item.free)
+
+
 func _start_run() -> void:
+	Audio.play("blade")
 	get_tree().change_scene_to_file(RUN_SCENE)
 
 
@@ -109,7 +123,7 @@ func _build() -> void:
 	content_style.set_content_margin_all(18)
 	content.add_theme_stylebox_override("panel", content_style)
 	column.add_child(content)
-	for panel: HubPanel in [EquipmentPanel.new(), SkillsPanel.new(), ShopPanel.new(), CoreTreePanel.new()]:
+	for panel: HubPanel in [EquipmentPanel.new(), SkillsPanel.new(), ShopPanel.new(), CoreTreePanel.new(), SettingsTab.new()]:
 		content.add_child(panel)
 		_panels.append(panel)
 

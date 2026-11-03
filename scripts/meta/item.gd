@@ -19,10 +19,13 @@ var rarity: int = Rarity.COMMON
 var title := ""
 ## [{"stat": String, "value": float}]
 var affixes: Array[Dictionary] = []
+## Part of the free basic kit: the camp hands these out at no cost, so they are worth
+## nothing and can't be sold.
+var free := false
 
 
 func price() -> int:
-	return RARITY_PRICES[rarity]
+	return 0 if free else RARITY_PRICES[rarity]
 
 
 func sell_price() -> int:
@@ -49,7 +52,10 @@ func describe_affixes() -> Array[String]:
 
 
 func to_dict() -> Dictionary:
-	return {"id": id, "slot": slot, "rarity": rarity, "title": title, "affixes": affixes.duplicate(true)}
+	var data := {"id": id, "slot": slot, "rarity": rarity, "title": title, "affixes": affixes.duplicate(true)}
+	if free:
+		data["free"] = true
+	return data
 
 
 static func from_dict(data: Dictionary) -> Item:
@@ -58,6 +64,7 @@ static func from_dict(data: Dictionary) -> Item:
 	item.slot = str(data.get("slot", "weapon"))
 	item.rarity = clampi(int(data.get("rarity", 0)), Rarity.COMMON, Rarity.LEGENDARY)
 	item.title = str(data.get("title", ""))
+	item.free = bool(data.get("free", false))
 	for affix in data.get("affixes", []):
 		item.affixes.append({"stat": str(affix["stat"]), "value": float(affix["value"])})
 	return item

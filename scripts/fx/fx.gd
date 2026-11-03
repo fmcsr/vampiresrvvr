@@ -1,11 +1,20 @@
 class_name Fx
 extends RefCounted
 ## Temporary visual effects and flat shapes drawn on the ground. Effects fade quickly and free themselves.
-## To be replaced with particle and shader effects in v0.4.
+## Particle bursts come from the run's ParticleBursts pool through burst().
 
 const GROUND_HEIGHT := 0.06
+## How long a Sword Rain sword takes to reach the ground (s).
+const SWORD_DROP_TIME := 0.12
 
 static var _ghost_mesh: CapsuleMesh
+
+
+## Particle burst (kinds in ParticleBursts.KINDS: sparks, bones, gore, dust, embers, shards,
+## wisps, glints, ring). Does nothing outside a run.
+static func burst(kind: StringName, at: Vector3, color: Color, amount := 1.0) -> void:
+	if Game.particles:
+		Game.particles.burst(kind, at, color, amount)
 
 
 ## Slice on the ground opening in the given direction (Fire Wave). half_angle is in radians.
@@ -135,8 +144,10 @@ static func sword_drop(at: Vector3, color: Color) -> void:
 	var bright := Color(color.r * 2.2, color.g * 2.2, color.b * 2.2, 0.95)
 	var node := _spawn(blade, bright, at + Vector3.UP * 7.0)
 	var tween := node.create_tween()
-	tween.tween_property(node, "position:y", node.position.y - 6.1, 0.12).set_ease(Tween.EASE_IN)
-	tween.tween_callback(func() -> void: ring(at, 1.0, color))
+	tween.tween_property(node, "position:y", node.position.y - 6.1, SWORD_DROP_TIME).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func() -> void:
+		ring(at, 1.0, color)
+		burst(&"sparks", at + Vector3.UP * 0.3, color, 0.4))
 	tween.tween_property(node.material_override, "albedo_color:a", 0.0, 0.15)
 	tween.tween_callback(node.queue_free)
 
