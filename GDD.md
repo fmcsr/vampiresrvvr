@@ -1,6 +1,6 @@
 # Game Design Document (GDD) — Working Title: *vampiresrvvr*
 
-> Version 0.9 · 3 November 2026 · Status: prototype v0.4 playable; v0.5 in progress (sound and game feel done, the Knight hero and the skeleton horde in)
+> Version 0.10 · 9 November 2026 · Status: prototype v0.4 playable; v0.5 in progress (sound and game feel done; the Knight hero, the skeleton horde, the dark fantasy interface and the desert crypt arena in)
 
 ## 1. Concept
 
@@ -195,9 +195,12 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - [x] The Knight as the hero: blended running and strafing while facing the mouse, upper-body sword swings that turn to the enemy hit, an animation for every power, a flinch on big hits, a death fall
 - [x] Skeleton horde: the Skeleton Minion as the Soldier (sword and small shield), the Skeleton Rogue as the fast enemy replacing the Ghoul (two blades), the Skeleton Warrior enlarged 1.6× as the Bone Giant (axe and large shield, the only one with a real shadow). Each skeleton and its weapons are merged into one mesh with glowing eyes and a blob shadow; off-screen skeletons don't animate, and above 100 enemies each animates every other frame
 - [x] Enemy swings land after a windup and can be stepped out of; siege waves and boss summons climb out of the ground (1.2 s, hittable, can't attack); the dead collapse into bone piles that sink away after 1.3 s
+- [x] Dark fantasy interface: iron plates with gold trim drawn in code (`IronFrame`), Cinzel for titles and Alegreya Sans for text, game-icons.net icons for every power, item, stat and menu. The camp opens on a Prepare screen (the Knight on a stone disc, the gear and powers you take in, total bonuses, what you'd lose) with the other tabs in a side menu with badges; gear is shown as an icon grid and compared with what you wear; good items and withdrawing ask before they happen; Core Tree nodes show their stat's icon (names in tooltips and the side panel); the pause screen is a menu with Resume; level-up cards show an icon, rank pips and the total before and after
+- [x] Power effects glow: the ground shapes add light (an energy shader with a bright rim and drifting texture) instead of flat paint
 - [ ] Adventurer bosses, enlarged: the Rogue (minute 5, with a new telegraphed arrow volley), the Barbarian (minute 10), the Mage as the necromancer Bone King (minute 15)
 - [ ] A "corrupted" look for the bosses (darker colors, glowing eyes, an aura), toon shader and outline
-- [ ] Environment (dungeon pieces, torches) and lighting
+- [x] Environment: the arena is a dungeon swallowed by the desert, built from layout tables with a fixed seed (`scripts/world/arena.gd`): dusky sand with dune shading and wind ripples (`shaders/sand.gdshader`), the old KayKit stone floor showing through around the start and in patches, 22 solid ruins (broken and fallen pillars, rubble heaps, crates and barrel stacks, graves, dead trees, an arch, a giant ribcage, a broken wall), half-buried KayKit walls at the edges, about 1,200 dry grass tufts that sway, bones, rocks and six flickering lights without shadows. Repeated pieces are batched (about 75 MultiMesh nodes), so the arena adds roughly 30 to 60 draw calls
+- [ ] Lighting pass
 - [ ] Later: the hooded Rogue as an elite enemy ("Hooded Stalker")
 
 ## 10. Open Questions
@@ -235,6 +238,8 @@ A single-player action-survivors game played from a Diablo 4 camera angle: you f
 - Stat names and caps: `scripts/meta/stats.gd`
 - Starting gold and number of shop wares: `scripts/autoload/profile.gd`
 - Chance of an item from a chest: `Chests` node → `item_chance`
+- Arena layout (floor patches, obstacles, remains, grass, lights): tables at the top of `scripts/world/arena.gd`; sand look: `shaders/desert_sand.gdshaderinc`
+- Interface colors, fonts and plate styles: `scripts/ui/ui_theme.gd`; icons: `ui/icons/` (named in `SkillLibrary`, `Stats`, `BoonLibrary` and `Item.SLOT_ICONS`)
 - Sound mix (volume, pitch variation, how many at once, minimum gap) and music tracks: `scripts/autoload/audio.gd` → `SOUNDS` and `MUSIC`
 - Which pack file becomes which sound: `tools/import_sfx.py`; synthesized sounds: `tools/synth_sfx.py`
 - Particle bursts (count, speed, size, color, glow): `scripts/fx/particle_bursts.gd` → `KINDS`
