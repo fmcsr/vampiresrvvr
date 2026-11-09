@@ -18,6 +18,7 @@ var _is_over := false
 
 func _enter_tree() -> void:
 	Game.reset()
+	UiTheme.apply(get_tree())
 
 
 func _ready() -> void:

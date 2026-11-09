@@ -12,28 +12,28 @@ const POWER_MAX_RANK := 3
 
 ## "tag" sets the card's color and what the boon belongs to.
 const BOONS := {
-	"might": {"title": "Might", "text": "All damage +{v}%.",
+	"might": {"title": "Might", "icon": "sword-wound", "text": "All damage +{v}%.",
 			"value": 0.10, "percent": true, "max_rank": 5, "tag": "General"},
-	"vitality": {"title": "Blood Bond", "text": "Max health +{v} and heal {v} health.",
+	"vitality": {"title": "Blood Bond", "icon": "heart-plus", "text": "Max health +{v} and heal {v} health.",
 			"value": 20.0, "percent": false, "max_rank": 5, "tag": "General"},
-	"swiftness": {"title": "Wind Step", "text": "Move speed +{v}%.",
+	"swiftness": {"title": "Wind Step", "icon": "boots", "text": "Move speed +{v}%.",
 			"value": 0.08, "percent": true, "max_rank": 4, "tag": "General"},
-	"haste": {"title": "Time Slip", "text": "Power cooldowns −{v}%.",
+	"haste": {"title": "Time Slip", "icon": "hourglass", "text": "Power cooldowns −{v}%.",
 			"value": 0.08, "percent": true, "max_rank": 4, "tag": "General"},
-	"magnet": {"title": "Soul Pull", "text": "XP pickup radius +{v}%.",
+	"magnet": {"title": "Soul Pull", "icon": "magnet", "text": "XP pickup radius +{v}%.",
 			"value": 0.30, "percent": true, "max_rank": 3, "tag": "General"},
-	"regen": {"title": "Regeneration", "text": "Regenerate {v} health per second.",
+	"regen": {"title": "Regeneration", "icon": "heart-bottle", "text": "Regenerate {v} health per second.",
 			"value": 0.5, "percent": false, "max_rank": 4, "tag": "General"},
-	"attack_speed": {"title": "Swift Blade", "text": "Sword Swing speed +{v}%.",
+	"attack_speed": {"title": "Swift Blade", "icon": "winged-sword", "text": "Sword Swing speed +{v}%.",
 			"value": 0.15, "percent": true, "max_rank": 5, "tag": "Sword Swing"},
-	"arc": {"title": "Wide Swing", "text": "Sword Swing arc +{v}°.",
+	"arc": {"title": "Wide Swing", "icon": "crossed-swords", "text": "Sword Swing arc +{v}°.",
 			"value": 30.0, "percent": false, "max_rank": 3, "tag": "Sword Swing"},
-	"reach": {"title": "Long Blade", "text": "Sword Swing reach +{v}%.",
+	"reach": {"title": "Long Blade", "icon": "broadsword", "text": "Sword Swing reach +{v}%.",
 			"value": 0.15, "percent": true, "max_rank": 3, "tag": "Sword Swing"},
 }
 
 ## Offered when there are no boons left to pick; it has no rank.
-const HEAL := {"title": "Healing Spring", "text": "Heal {v} health.",
+const HEAL := {"title": "Healing Spring", "icon": "heart-bottle", "text": "Heal {v} health.",
 		"value": 40.0, "percent": false, "max_rank": 0, "tag": "General"}
 
 const TAG_COLORS := {
@@ -72,6 +72,12 @@ static func describe(boon_id: String) -> String:
 		amount *= 100.0
 	var text: String = data["text"]
 	return text.format({"v": UiKit.format_number(amount)})
+
+
+static func icon(boon_id: String) -> Texture2D:
+	if boon_id.begins_with(POWER_PREFIX):
+		return SkillLibrary.icon(boon_id.trim_prefix(POWER_PREFIX))
+	return UiKit.icon_texture(info(boon_id)["icon"])
 
 
 ## The card's accent color; power boons use the power's color.

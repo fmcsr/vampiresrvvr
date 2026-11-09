@@ -15,7 +15,7 @@ const TIERS: Array[Dictionary] = [
 ]
 const SKILLS := {
 	"fire_wave": {
-		"title": "Fire Wave", "tier": 0, "color": Color(1.0, 0.45, 0.15),
+		"title": "Fire Wave", "icon": "fire-wave", "tier": 0, "color": Color(1.0, 0.45, 0.15),
 		"script": "res://scripts/abilities/fire_wave.gd",
 		"cast": ["Spellcast_Shoot", 0.5],
 		"text": "Sprays a cone of flame in the aim direction, knocking enemies back.",
@@ -24,7 +24,7 @@ const SKILLS := {
 		"b": ["Firestorm", "The cone widens into a semicircle; cooldown is 1 s longer."],
 	},
 	"whirlwind": {
-		"title": "Whirlwind", "tier": 0, "color": Color(0.75, 0.8, 0.95),
+		"title": "Whirlwind", "icon": "sword-spin", "tier": 0, "color": Color(0.75, 0.8, 0.95),
 		"script": "res://scripts/abilities/whirlwind.gd",
 		"text": "Spins in place for 2.5 s, repeatedly hitting everything nearby. You are slowed while spinning.",
 		"enhanced": "The spin lasts 1 s longer.",
@@ -32,7 +32,7 @@ const SKILLS := {
 		"b": ["Blood Storm", "Each hit restores 0.5 health."],
 	},
 	"soul_chain": {
-		"title": "Soul Chain", "tier": 0, "color": Color(0.55, 0.9, 0.85),
+		"title": "Soul Chain", "icon": "andromeda-chain", "tier": 0, "color": Color(0.55, 0.9, 0.85),
 		"script": "res://scripts/abilities/soul_chain.gd",
 		"cast": ["Throw", 0.55],
 		"text": "Pulls nearby enemies to you and damages them. Pair it with area powers.",
@@ -41,7 +41,7 @@ const SKILLS := {
 		"b": ["Soul Harvest", "Restores 1 health for each enemy pulled."],
 	},
 	"frost_nova": {
-		"title": "Frost Nova", "tier": 1, "color": Color(0.45, 0.85, 1.0),
+		"title": "Frost Nova", "icon": "frozen-orb", "tier": 1, "color": Color(0.45, 0.85, 1.0),
 		"script": "res://scripts/abilities/frost_nova.gd",
 		"cast": ["Spellcast_Raise", 0.6],
 		"text": "Freezes enemies around you and deals light damage.",
@@ -50,7 +50,7 @@ const SKILLS := {
 		"b": ["Frost Burst", "Area increases by 40%."],
 	},
 	"shadow_dash": {
-		"title": "Shadow Dash", "tier": 1, "color": Color(0.6, 0.4, 1.0),
+		"title": "Shadow Dash", "icon": "shadow-follower", "tier": 1, "color": Color(0.6, 0.4, 1.0),
 		"script": "res://scripts/abilities/shadow_dash.gd",
 		"text": "Dashes in your move direction; you take no damage while dashing and hit enemies in your path.",
 		"enhanced": "Cooldown is 1 s shorter.",
@@ -58,7 +58,7 @@ const SKILLS := {
 		"b": ["Shadow Burst", "Explodes where the dash ends, damaging nearby enemies."],
 	},
 	"bone_shield": {
-		"title": "Bone Shield", "tier": 1, "color": Color(0.9, 0.88, 0.75),
+		"title": "Bone Shield", "icon": "skull-shield", "tier": 1, "color": Color(0.9, 0.88, 0.75),
 		"script": "res://scripts/abilities/bone_shield.gd",
 		"cast": ["Block", 0.5],
 		"text": "Gain a shield that absorbs damage for 6 s.",
@@ -67,7 +67,7 @@ const SKILLS := {
 		"b": ["Hardened Bone", "The shield lasts 4 s longer; you run 15% faster while it holds."],
 	},
 	"earthquake_leap": {
-		"title": "Earthquake Leap", "tier": 2, "color": Color(0.85, 0.6, 0.3),
+		"title": "Earthquake Leap", "icon": "quake-stomp", "tier": 2, "color": Color(0.85, 0.6, 0.3),
 		"script": "res://scripts/abilities/earthquake_leap.gd",
 		"text": "Leaps to the aim point; on landing, deals area damage and stuns enemies.",
 		"enhanced": "Stun lasts 0.6 s longer.",
@@ -75,7 +75,7 @@ const SKILLS := {
 		"b": ["Winged Leap", "Cooldown is 3 s shorter."],
 	},
 	"war_cry": {
-		"title": "War Cry", "tier": 2, "color": Color(1.0, 0.3, 0.3),
+		"title": "War Cry", "icon": "shouting", "tier": 2, "color": Color(1.0, 0.3, 0.3),
 		"script": "res://scripts/abilities/war_cry.gd",
 		"cast": ["Cheer", 0.8],
 		"text": "Your damage and attack speed increase by 25% for 6 s; nearby enemies are knocked back.",
@@ -84,7 +84,7 @@ const SKILLS := {
 		"b": ["Battle Fury", "While the effect lasts, cooldowns recharge 25% faster."],
 	},
 	"heavens_wrath": {
-		"title": "Heaven's Wrath", "tier": 3, "color": Color(1.0, 0.85, 0.35), "ultimate": true,
+		"title": "Heaven's Wrath", "icon": "lightning-storm", "tier": 3, "color": Color(1.0, 0.85, 0.35), "ultimate": true,
 		"script": "res://scripts/abilities/heavens_wrath.gd",
 		"cast": ["Spellcast_Raise", 0.7],
 		"text": "After a short warning, calls down a huge blast of light on the aim point.",
@@ -93,7 +93,7 @@ const SKILLS := {
 		"b": ["Apocalypse", "Cooldown is 15 s shorter."],
 	},
 	"sword_rain": {
-		"title": "Sword Rain", "tier": 3, "color": Color(0.7, 0.85, 1.0), "ultimate": true,
+		"title": "Sword Rain", "icon": "sword-array", "tier": 3, "color": Color(0.7, 0.85, 1.0), "ultimate": true,
 		"script": "res://scripts/abilities/sword_rain.gd",
 		"cast": ["Spellcast_Long", 0.9],
 		"text": "For 4 s, swords rain down from the sky on enemies around you.",
@@ -120,6 +120,10 @@ static func title(skill_id: String) -> String:
 
 static func color(skill_id: String) -> Color:
 	return SKILLS[skill_id]["color"]
+
+
+static func icon(skill_id: String) -> Texture2D:
+	return UiKit.icon_texture(SKILLS[skill_id]["icon"])
 
 
 static func tier(skill_id: String) -> int:

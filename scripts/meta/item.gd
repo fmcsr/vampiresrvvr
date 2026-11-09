@@ -7,6 +7,7 @@ enum Rarity { COMMON, MAGIC, RARE, LEGENDARY }
 
 const SLOTS: Array[String] = ["weapon", "armor", "trinket"]
 const SLOT_NAMES := {"weapon": "Weapon", "armor": "Armor", "trinket": "Charm"}
+const SLOT_ICONS := {"weapon": "broadsword", "armor": "leather-armor", "trinket": "gem-pendant"}
 const RARITY_NAMES: Array[String] = ["Common", "Magic", "Rare", "Legendary"]
 const RARITY_COLORS: Array[Color] = [
 	Color(0.85, 0.85, 0.82), Color(0.45, 0.65, 1.0), Color(1.0, 0.85, 0.3), Color(1.0, 0.55, 0.15)]
@@ -42,6 +43,10 @@ func rarity_name() -> String:
 
 func slot_name() -> String:
 	return SLOT_NAMES[slot]
+
+
+func icon() -> Texture2D:
+	return UiKit.icon_texture(SLOT_ICONS[slot])
 
 
 func describe_affixes() -> Array[String]:

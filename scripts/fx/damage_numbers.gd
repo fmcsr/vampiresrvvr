@@ -34,6 +34,7 @@ var _next := 0
 func _ready() -> void:
 	for i in POOL_SIZE:
 		var label := Label3D.new()
+		label.font = UiTheme.title_font(800)
 		label.font_size = 48
 		label.outline_size = 12
 		label.pixel_size = 0.01

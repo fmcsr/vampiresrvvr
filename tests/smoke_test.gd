@@ -562,29 +562,36 @@ func _equip_power_set(power_set: Dictionary) -> void:
 func _drive_hub() -> void:
 	_frames += 1
 	match _frames:
-		5:
-			_screenshot("equipment")
+		6:
+			_screenshot("prepare")
 			_hub.show_tab(1)
 		10:
-			_screenshot("skills")
-			var skills_panel := _hub._panels[1] as SkillsPanel
-			skills_panel._select("fire_wave")
-		12:
-			_screenshot("skills_selected")
+			_screenshot("equipment")
+			if not Profile.stash.is_empty():
+				(_hub._panels[1] as EquipmentPanel)._select(Profile.stash[0])
+		13:
+			_screenshot("equipment_selected")
 			_hub.show_tab(2)
 		17:
-			_screenshot("shop")
+			_screenshot("skills")
+			var skills_panel := _hub._panels[2] as SkillsPanel
+			skills_panel._select("fire_wave")
+		19:
+			_screenshot("skills_selected")
 			_hub.show_tab(3)
-		22:
+		23:
+			_screenshot("shop")
+			_hub.show_tab(4)
+		28:
 			_screenshot("tree")
-			var tree_panel := _hub._panels[3] as CoreTreePanel
+			var tree_panel := _hub._panels[4] as CoreTreePanel
 			tree_panel._select("a2")
 			tree_panel._on_unlock_pressed()
 			_expect(Profile.unlocked.has("a2") and Profile.cores == 4, "unlocking a node from the tree screen")
-		27:
+		33:
 			_screenshot("tree_after")
-			_hub.show_tab(4)
-		30:
+			_hub.show_tab(5)
+		36:
 			_screenshot("settings")
 			_finish("Camp")
 

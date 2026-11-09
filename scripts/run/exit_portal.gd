@@ -27,15 +27,15 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	var tint := color()
 	var glow := Color(tint.r * 2.5, tint.g * 2.5, tint.b * 2.5)
-	_add_mesh(Fx.flat_mesh(RADIUS - 0.3, RADIUS, PI, 48), glow, 0.08)
-	_fill = _add_mesh(Fx.flat_mesh(0.0, RADIUS - 0.3, PI, 48), Color(tint, 0.35), 0.07)
+	_add_mesh(Fx.flat_mesh(RADIUS - 0.5, RADIUS, PI, 48), Fx.energy(tint, 0.5, 1.6, true, true), 0.08)
+	_fill = _add_mesh(Fx.flat_mesh(0.0, RADIUS - 0.3, PI, 48), Fx.energy(Color(tint, 0.8), 0.45, 0.6), 0.07)
 	_fill.scale = Vector3(0.01, 1.0, 0.01)
 	# The beam starts above the character so the character stays visible inside the gate.
 	var beam_mesh := CylinderMesh.new()
 	beam_mesh.top_radius = 0.4
 	beam_mesh.bottom_radius = 0.7
 	beam_mesh.height = 40.0
-	_add_mesh(beam_mesh, Color(glow, 0.22), BEAM_START_HEIGHT + 20.0)
+	_add_mesh(beam_mesh, Fx.unshaded_material(Color(glow, 0.22), true), BEAM_START_HEIGHT + 20.0)
 	var light := OmniLight3D.new()
 	light.light_color = tint
 	light.light_energy = 3.0
@@ -102,10 +102,10 @@ func _stop_hum() -> void:
 	Audio.set_loop(HUM_KEY, "gate_hum", false)
 
 
-func _add_mesh(mesh: Mesh, tint: Color, height: float) -> MeshInstance3D:
+func _add_mesh(mesh: Mesh, material: Material, height: float) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
-	node.material_override = Fx.unshaded_material(tint)
+	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.position.y = height
 	add_child(node)

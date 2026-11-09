@@ -3,12 +3,12 @@ extends VBoxContainer
 ## Volume sliders and gameplay toggles. Used in the pause screen and the camp's Settings tab;
 ## every change goes straight to Settings, which saves it.
 
-const TEXT_COLOR := Color(0.92, 0.9, 0.86)
-const DIM_COLOR := Color(1.0, 1.0, 1.0, 0.6)
+const TEXT_COLOR := UiTheme.TEXT
+const DIM_COLOR := UiTheme.TEXT_DIM
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", 10)
+	add_theme_constant_override("separation", 12)
 	_slider("Master volume", "master_volume")
 	_slider("Music", "music_volume")
 	_slider("Effects", "effects_volume")
@@ -47,8 +47,6 @@ func _toggle(title: String, key: String) -> void:
 	box.text = title
 	box.button_pressed = Settings.get(key)
 	box.focus_mode = Control.FOCUS_NONE
-	box.add_theme_font_size_override("font_size", 18)
-	box.add_theme_color_override("font_color", TEXT_COLOR)
 	box.toggled.connect(func(enabled: bool) -> void:
 		Audio.play("ui_click")
 		Settings.set_value(key, enabled))
