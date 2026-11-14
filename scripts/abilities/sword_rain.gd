@@ -26,6 +26,7 @@ func _configure() -> void:
 func activate() -> void:
 	_rain_left = duration
 	_timer = 0.0
+	Audio.play("blade")
 
 
 func _tick(delta: float) -> void:
@@ -48,7 +49,9 @@ func _strike() -> void:
 		var target := targets.pick_random() as Enemy
 		point = target.global_position
 		if choice != "b":
-			target.take_damage(hit_damage)
+			target.take_damage(hit_damage, Vector3.ZERO, true, color)
 	if choice == "b":
 		_blast(point, splash_radius * player.area_multiplier, hit_damage, 2.0)
 	Fx.sword_drop(point, color)
+	# The clang plays when the sword reaches the ground.
+	get_tree().create_timer(Fx.SWORD_DROP_TIME, false).timeout.connect(Audio.play_at.bind("sword_drop", point))

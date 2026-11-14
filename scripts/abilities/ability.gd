@@ -50,6 +50,9 @@ func try_activate() -> bool:
 		return false
 	activate()
 	cooldown_left = cooldown_duration()
+	var cast := SkillLibrary.cast_animation(skill_id)
+	if not cast.is_empty():
+		player.animator.play_upper(cast[0], cast[1])
 	return true
 
 
@@ -85,5 +88,5 @@ func _blast(center: Vector3, radius: float, damage: float, knockback: float) -> 
 	for enemy in hit:
 		var push := enemy.global_position - center
 		push.y = 0.0
-		enemy.take_damage(damage, push.normalized() * knockback)
+		enemy.take_damage(damage, push.normalized() * knockback, true, color)
 	return hit

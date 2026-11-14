@@ -7,6 +7,7 @@ enum Rarity { COMMON, MAGIC, RARE, LEGENDARY }
 
 const SLOTS: Array[String] = ["weapon", "armor", "trinket"]
 const SLOT_NAMES := {"weapon": "Weapon", "armor": "Armor", "trinket": "Charm"}
+const SLOT_ICONS := {"weapon": "broadsword", "armor": "leather-armor", "trinket": "gem-pendant"}
 const RARITY_NAMES: Array[String] = ["Common", "Magic", "Rare", "Legendary"]
 const RARITY_COLORS: Array[Color] = [
 	Color(0.85, 0.85, 0.82), Color(0.45, 0.65, 1.0), Color(1.0, 0.85, 0.3), Color(1.0, 0.55, 0.15)]
@@ -19,10 +20,13 @@ var rarity: int = Rarity.COMMON
 var title := ""
 ## [{"stat": String, "value": float}]
 var affixes: Array[Dictionary] = []
+## Part of the free basic kit: the camp hands these out at no cost, so they are worth
+## nothing and can't be sold.
+var free := false
 
 
 func price() -> int:
-	return RARITY_PRICES[rarity]
+	return 0 if free else RARITY_PRICES[rarity]
 
 
 func sell_price() -> int:
@@ -41,6 +45,10 @@ func slot_name() -> String:
 	return SLOT_NAMES[slot]
 
 
+func icon() -> Texture2D:
+	return UiKit.icon_texture(SLOT_ICONS[slot])
+
+
 func describe_affixes() -> Array[String]:
 	var lines: Array[String] = []
 	for affix in affixes:
@@ -49,7 +57,10 @@ func describe_affixes() -> Array[String]:
 
 
 func to_dict() -> Dictionary:
-	return {"id": id, "slot": slot, "rarity": rarity, "title": title, "affixes": affixes.duplicate(true)}
+	var data := {"id": id, "slot": slot, "rarity": rarity, "title": title, "affixes": affixes.duplicate(true)}
+	if free:
+		data["free"] = true
+	return data
 
 
 static func from_dict(data: Dictionary) -> Item:
@@ -58,6 +69,7 @@ static func from_dict(data: Dictionary) -> Item:
 	item.slot = str(data.get("slot", "weapon"))
 	item.rarity = clampi(int(data.get("rarity", 0)), Rarity.COMMON, Rarity.LEGENDARY)
 	item.title = str(data.get("title", ""))
+	item.free = bool(data.get("free", false))
 	for affix in data.get("affixes", []):
 		item.affixes.append({"stat": str(affix["stat"]), "value": float(affix["value"])})
 	return item

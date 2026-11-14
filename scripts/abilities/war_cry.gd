@@ -38,6 +38,9 @@ func activate() -> void:
 		if choice == "a" and enemy.is_alive:
 			enemy.freeze(fear_duration)
 	Fx.ring(player.global_position, radius, color)
+	Fx.burst(&"ring", player.global_position + Vector3.UP * 0.4, color)
+	Fx.burst(&"dust", player.global_position, Color(0.45, 0.4, 0.35, 0.5), 0.7)
+	Audio.play("war_cry")
 	Game.shake(0.3)
 
 

@@ -89,4 +89,6 @@ func _open(chest: Node3D) -> void:
 	if randf() < item_chance * (1.0 + Game.player.meta_value("item_find_pct")):
 		Game.director.add_item(ItemGenerator.roll_drop(ItemGenerator.Source.CHEST), chest.global_position)
 	Fx.ring(chest.global_position, 1.6, RunDirector.GOLD_COLOR)
+	Fx.burst(&"glints", chest.global_position + Vector3.UP * 0.6, RunDirector.GOLD_COLOR)
+	Audio.play("chest")
 	chest.queue_free()

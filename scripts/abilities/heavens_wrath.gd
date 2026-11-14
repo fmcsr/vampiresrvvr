@@ -40,6 +40,8 @@ func activate() -> void:
 			_queue(spot, small, damage * triple_damage_ratio, delay + triple_stagger * i)
 	else:
 		_queue(target, final_radius, damage, delay)
+	# A high bell rings as the heavens open.
+	Audio.play("bell", 1.6, -4.0)
 
 
 func _queue(at: Vector3, blast_radius: float, blast_damage: float, wait: float) -> void:
@@ -57,6 +59,11 @@ func _tick(delta: float) -> void:
 
 
 func _explode(center: Vector3, blast_radius: float, blast_damage: float) -> void:
-	_blast(center, blast_radius, blast_damage * damage_scale(), knockback)
+	var hit := _blast(center, blast_radius, blast_damage * damage_scale(), knockback)
 	Fx.pillar(center, blast_radius, color)
+	Fx.burst(&"sparks", center + Vector3.UP, color)
+	Fx.burst(&"dust", center, Color(0.45, 0.4, 0.35, 0.6))
+	Audio.play_at("thunder", center)
 	Game.shake(0.7)
+	if not hit.is_empty():
+		Game.hit_stop(0.06)

@@ -63,6 +63,13 @@ static func basic(slot: String) -> Item:
 	return item
 
 
+## A basic item from the free kit (see Profile.take_free_basic).
+static func free_basic(slot: String) -> Item:
+	var item := basic(slot)
+	item.free = true
+	return item
+
+
 ## Gives an item from an older (Turkish) save a fresh English title.
 static func retitle(item: Item) -> void:
 	if item.affixes.is_empty():

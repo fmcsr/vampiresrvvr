@@ -29,13 +29,18 @@ func activate() -> void:
 	if choice == "b":
 		player.set_modifier(Player.Modifier.MOVE_SPEED, SPEED_SOURCE, 1.0 + speed_bonus)
 	Fx.ring(player.global_position, 1.8, color)
+	Fx.burst(&"bones", player.global_position + Vector3.UP, color, 0.6)
+	Audio.play("bone_shield")
 
 
 func _on_shield_ended() -> void:
 	player.thorns_damage = 0.0
 	player.clear_modifier(Player.Modifier.MOVE_SPEED, SPEED_SOURCE)
+	Audio.play("kill_bone", 0.85)
 	if choice == "a":
 		var radius := burst_radius * player.area_multiplier
 		_blast(player.global_position, radius, burst_damage * damage_scale(), 8.0)
 		Fx.ring(player.global_position, radius, color)
+		Fx.burst(&"bones", player.global_position + Vector3.UP, color)
+		Audio.play("slam", 1.2, -3.0)
 		Game.shake(0.3)

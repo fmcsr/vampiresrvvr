@@ -10,6 +10,7 @@ const RADIUS := 2.4
 const BEAM_START_HEIGHT := 3.0
 const EARLY_COLOR := Color(0.3, 1.0, 0.75)
 const FINAL_COLOR := Color(1.0, 0.85, 0.4)
+const HUM_KEY := "gate"
 
 ## How long you must stay inside (s).
 @export var channel_time := 3.0
@@ -26,15 +27,15 @@ func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	var tint := color()
 	var glow := Color(tint.r * 2.5, tint.g * 2.5, tint.b * 2.5)
-	_add_mesh(Fx.flat_mesh(RADIUS - 0.3, RADIUS, PI, 48), glow, 0.08)
-	_fill = _add_mesh(Fx.flat_mesh(0.0, RADIUS - 0.3, PI, 48), Color(tint, 0.35), 0.07)
+	_add_mesh(Fx.flat_mesh(RADIUS - 0.5, RADIUS, PI, 48), Fx.energy(tint, 0.5, 1.6, true, true), 0.08)
+	_fill = _add_mesh(Fx.flat_mesh(0.0, RADIUS - 0.3, PI, 48), Fx.energy(Color(tint, 0.8), 0.45, 0.6), 0.07)
 	_fill.scale = Vector3(0.01, 1.0, 0.01)
 	# The beam starts above the character so the character stays visible inside the gate.
 	var beam_mesh := CylinderMesh.new()
 	beam_mesh.top_radius = 0.4
 	beam_mesh.bottom_radius = 0.7
 	beam_mesh.height = 40.0
-	_add_mesh(beam_mesh, Color(glow, 0.22), BEAM_START_HEIGHT + 20.0)
+	_add_mesh(beam_mesh, Fx.unshaded_material(Color(glow, 0.22), true), BEAM_START_HEIGHT + 20.0)
 	var light := OmniLight3D.new()
 	light.light_color = tint
 	light.light_energy = 3.0
@@ -56,11 +57,17 @@ func _physics_process(delta: float) -> void:
 		progress = minf(progress + delta / channel_time, 1.0)
 		if progress >= 1.0:
 			_is_open = false
+			_stop_hum()
+			Fx.burst(&"ring", global_position + Vector3.UP * 0.5, color())
+			Fx.burst(&"glints", global_position + Vector3.UP, color())
 			extracted.emit()
+			return
 	else:
 		progress = maxf(progress - delta * 2.0 / channel_time, 0.0)
 	var fill := maxf(progress, 0.01)
 	_fill.scale = Vector3(fill, 1.0, fill)
+	# The hum rises in pitch and volume as the channel fills.
+	Audio.set_loop(HUM_KEY, "gate_hum", progress > 0.0, 0.75 + 0.6 * progress, -6.0 + 6.0 * progress)
 
 
 func color() -> Color:
@@ -75,19 +82,30 @@ func is_open() -> bool:
 func close() -> void:
 	_is_open = false
 	progress = 0.0
+	_stop_hum()
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector3(0.01, 1.0, 0.01), 0.4)
 	tween.tween_callback(queue_free)
 
 
+func _exit_tree() -> void:
+	_stop_hum()
+
+
 func _on_player_damaged(_amount: float) -> void:
+	if _is_open and progress > 0.05:
+		Audio.play("gate_break")
 	progress = 0.0
 
 
-func _add_mesh(mesh: Mesh, tint: Color, height: float) -> MeshInstance3D:
+func _stop_hum() -> void:
+	Audio.set_loop(HUM_KEY, "gate_hum", false)
+
+
+func _add_mesh(mesh: Mesh, material: Material, height: float) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
-	node.material_override = Fx.unshaded_material(tint)
+	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.position.y = height
 	add_child(node)

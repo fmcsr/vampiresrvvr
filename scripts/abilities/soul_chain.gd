@@ -2,6 +2,9 @@ extends Ability
 ## Soul Chain: pulls nearby enemies in and damages them; meant to be paired with area powers.
 ## Enhanced: range +30%. Shackles: pulled enemies freeze for 1.5 s. Soul Harvest: health per enemy pulled.
 
+## Soul wisps are shown on at most this many pulled enemies.
+const MAX_WISPS := 8
+
 @export var damage := 15.0
 @export var radius := 9.0
 ## Distance from the player (m) at which pulled enemies stop.
@@ -30,9 +33,12 @@ func activate() -> void:
 		var travel := maxf(offset.length() - pull_to - enemy.body_radius, 0.0)
 		# Knockback decays at a constant rate, so the initial speed needed to stop exactly at pull_to is v = √(2·a·d)
 		var speed := sqrt(2.0 * Enemy.KNOCKBACK_DECAY * travel)
-		enemy.take_damage(hit_damage, offset.normalized() * speed)
+		enemy.take_damage(hit_damage, offset.normalized() * speed, true, color)
 		if choice == "a" and enemy.is_alive:
 			enemy.freeze(stun_duration)
 	if choice == "b" and not pulled.is_empty():
 		player.heal(heal_per_enemy * pulled.size())
 	Fx.implode(center, final_radius, color)
+	for i in mini(pulled.size(), MAX_WISPS):
+		Fx.burst(&"wisps", pulled[i].global_position + Vector3.UP, color, 0.5)
+	Audio.play("soul_chain")

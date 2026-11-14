@@ -37,4 +37,5 @@ func _physics_process(delta: float) -> void:
 
 
 func add_trauma(amount: float) -> void:
-	_trauma = minf(_trauma + amount, 1.0)
+	if Settings.screen_shake:
+		_trauma = minf(_trauma + amount, 1.0)

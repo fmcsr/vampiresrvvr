@@ -16,6 +16,8 @@ const CORE_COLOR := Color(0.45, 1.0, 0.7)
 const PORTAL_SPACING := 25.0
 ## Number of items the final boss drops (mini-bosses drop 1).
 const FINAL_BOSS_ITEMS := 2
+## The clock ticks every second for the last this many seconds before the gate closes.
+const TICK_SECONDS := 10
 
 @export var boss_scene: PackedScene
 ## Mini-bosses in spawn order; their spawn times are in mini_boss_times.
@@ -53,6 +55,7 @@ var _ended := false
 var _portal_request := PortalRequest.NONE
 var _has_last_portal := false
 var _last_portal_position := Vector3.ZERO
+var _last_tick := -1
 
 
 func _physics_process(delta: float) -> void:
@@ -71,7 +74,13 @@ func _physics_process(delta: float) -> void:
 		_spawn_boss(final_boss)
 	if countdown_left > 0.0:
 		countdown_left = maxf(countdown_left - delta, 0.0)
+		var seconds := ceili(countdown_left)
+		if seconds <= TICK_SECONDS and seconds != _last_tick and seconds > 0:
+			_last_tick = seconds
+			# Each tick a little higher, so the last seconds feel urgent.
+			Audio.play("tick", 1.0 + 0.04 * (TICK_SECONDS - seconds))
 		if countdown_left <= 0.0:
+			Audio.play("gong", 0.6)
 			end_run(false, "The gate closed")
 
 
@@ -81,12 +90,15 @@ func add_gold(amount: int, at: Vector3) -> void:
 	gold += final_amount
 	loot_changed.emit()
 	Fx.floating_text(at + Vector3.UP * 2.0, "+%d gold" % final_amount, GOLD_COLOR)
+	Audio.play("gold")
 
 
 func add_item(item: Item, at: Vector3) -> void:
 	items.append(item)
 	loot_changed.emit()
 	Fx.floating_text(at + Vector3.UP * 2.8, item.title, item.color())
+	Fx.burst(&"glints", at + Vector3.UP * 1.5, item.color())
+	Audio.play("item")
 
 
 func end_run(success: bool, reason: String) -> void:
@@ -94,6 +106,9 @@ func end_run(success: bool, reason: String) -> void:
 		return
 	_ended = true
 	countdown_left = -1.0
+	if success:
+		Audio.play("extract")
+	Audio.play_music("")
 	run_ended.emit({
 		"success": success,
 		"reason": reason,
@@ -112,8 +127,11 @@ func _spawn_boss(boss_type: BossType) -> void:
 	boss.spawn(boss_type, Game.spawner.random_spawn_point(Game.player.global_position), 1.0)
 	boss.died.connect(_on_boss_died)
 	bosses.append(boss)
+	Fx.burst(&"dust", boss.global_position, Color(0.45, 0.4, 0.35, 0.7))
 	Game.announce("%s has awakened!" % boss_type.display_name)
 	Game.shake(0.4)
+	Audio.play("boss_roar")
+	Audio.play_music("boss")
 
 
 func _on_boss_died(enemy: Enemy) -> void:
@@ -131,14 +149,19 @@ func _on_boss_died(enemy: Enemy) -> void:
 		countdown_left = final_countdown
 		Game.spawner.intensity = escape_spawn_multiplier
 		Game.announce("Core secured — run for the gate!")
+		# The boss music keeps playing through the escape.
+		Audio.play("bell")
 	else:
 		run_cores += boss.boss_type.core_reward
 		add_item(ItemGenerator.roll_drop(ItemGenerator.Source.MINI_BOSS), at)
 		if not core_secured:
 			_portal_request = PortalRequest.EARLY
 			Game.announce("An exit gate has opened")
+		if bosses.is_empty() and countdown_left <= 0.0:
+			Audio.play_music("run")
 	var core_text := "+%d core" if boss.boss_type.core_reward == 1 else "+%d cores"
 	Fx.floating_text(at + Vector3.UP * 3.6, core_text % boss.boss_type.core_reward, CORE_COLOR)
+	Audio.play("core")
 	loot_changed.emit()
 
 
@@ -153,6 +176,8 @@ func _open_portal(is_final: bool) -> void:
 	portal.position = _pick_portal_point(is_final)
 	add_child(portal)
 	portal.extracted.connect(end_run.bind(true, "Escaped"))
+	Fx.burst(&"glints", portal.global_position + Vector3.UP, portal.color())
+	Audio.play("gong")
 
 
 func _pick_portal_point(is_final: bool) -> Vector3:

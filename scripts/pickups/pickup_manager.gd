@@ -7,8 +7,12 @@ const GEM_HEIGHT := 0.35
 const COLLECT_DISTANCE := 0.8
 const MAGNET_ACCELERATION := 45.0
 const SPIN_SPEED := 2.0
+## Gems picked up within this many seconds of each other raise the chime's pitch, up to an octave.
+const CHIME_CHAIN_TIME := 0.4
 
 var _active: Array[XpGem] = []
+var _chain := 0
+var _last_chime := -10.0
 var _pool: Array[XpGem] = []
 var _mesh := BoxMesh.new()
 var _materials: Array[StandardMaterial3D] = []
@@ -58,9 +62,18 @@ func _physics_process(delta: float) -> void:
 			if distance_squared <= collect_squared or step * step >= distance_squared:
 				player.add_xp(gem.value)
 				_release(i)
+				_chime()
 			else:
 				gem.position += to_player / sqrt(distance_squared) * step
 		i -= 1
+
+
+## Pickup chime; quick pickups climb a semitone each, like a combo.
+func _chime() -> void:
+	var now := Time.get_ticks_msec() * 0.001
+	_chain = mini(_chain + 1, 12) if now - _last_chime < CHIME_CHAIN_TIME else 0
+	_last_chime = now
+	Audio.play("xp", pow(2.0, _chain / 12.0))
 
 
 func _create_gem() -> XpGem:
